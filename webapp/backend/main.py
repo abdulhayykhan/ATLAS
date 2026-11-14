@@ -10,21 +10,29 @@ Run from the repository root:
 or simply:
     bash webapp/run.sh
 
+Deployment: this app is also the Vercel entrypoint — the repo-root
+pyproject.toml sets [tool.vercel] entrypoint = "webapp.backend.main:app",
+so Vercel runs it as-is and routes every request to it (see docs/12).
+
 Design notes:
   * The backend is read-only and stateless; all science is precomputed in
     outputs/*.csv by the pipeline. This service only shapes, filters and
     re-weights it.
+  * The CSVs are tiny, so they are read with the standard-library csv module
+    — no pandas/numpy. That keeps the serverless bundle small and the cold
+    starts fast on hosts like Vercel.
   * Re-weighting (Guide Objective 6) mirrors src/app.py exactly:
     D = sqrt( sum(w_k * dist_k^2) / sum(w over pillars with data) ),
     score = 100 * exp(-D). With the default weights, the stored official
     scores are returned untouched so the API can never drift from the
     published ranking.
 """
+import csv
 import math
 import os
+import re
 from functools import lru_cache
 
-import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -49,32 +57,49 @@ app = FastAPI(title="ATLAS API", description="Analog Terrain & Lunar Alignment S
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
 
-def _clean(v):
-    """Make a value JSON-safe: NaN -> None, numpy scalars -> Python scalars."""
-    if v is None:
+_INT_RE = re.compile(r"^-?\d+$")
+
+
+def _coerce(raw):
+    """CSV field -> Python value: '' -> None, ints -> int, decimals -> float,
+    everything else stays a string. Mirrors what pd.read_csv produced."""
+    if raw is None:
         return None
+    s = raw.strip()
+    if s == "" or s.lower() == "nan":
+        return None
+    if _INT_RE.match(s):
+        return int(s)
     try:
-        if pd.isna(v):
-            return None
-    except (TypeError, ValueError):
-        pass
-    if hasattr(v, "item"):
-        return v.item()
+        f = float(s)
+        return None if math.isnan(f) else f
+    except ValueError:
+        return raw
+
+
+def _read_csv(name):
+    p = os.path.join(OUTPUTS, name)
+    if not os.path.exists(p):
+        raise RuntimeError(f"Missing pipeline output: outputs/{name} — run the src/ pipeline first.")
+    with open(p, newline="", encoding="utf-8") as fh:
+        return [{k: _coerce(v) for k, v in row.items()} for row in csv.DictReader(fh)]
+
+
+def _clean(v):
+    """Make a value JSON-safe: NaN -> None."""
+    if isinstance(v, float) and math.isnan(v):
+        return None
     return v
 
 
-def _rows(df):
-    return [{k: _clean(v) for k, v in row.items()} for row in df.to_dict("records")]
+def _rows(rows):
+    return [{k: _clean(v) for k, v in r.items()} for r in rows]
 
 
 @lru_cache(maxsize=1)
 def _load():
-    def read(name):
-        p = os.path.join(OUTPUTS, name)
-        if not os.path.exists(p):
-            raise RuntimeError(f"Missing pipeline output: outputs/{name} — run the src/ pipeline first.")
-        return pd.read_csv(p)
-    return read("moon_profiles.csv"), read("earth_profiles.csv"), read("scores_ranking.csv"), read("mars_profiles.csv")
+    return (_read_csv("moon_profiles.csv"), _read_csv("earth_profiles.csv"),
+            _read_csv("scores_ranking.csv"), _read_csv("mars_profiles.csv"))
 
 
 def _merged_scores():
@@ -82,9 +107,17 @@ def _merged_scores():
     keep = ["site_name", "country", "lat", "lon", "site_type", "terrain_type",
             "slope_mean_deg", "pct_slope_under_10deg", "temp_mean_c",
             "temp_seasonal_range_c", "sand_pct", "clay_pct", "coarse_fragments_pct"]
-    if "regime" in earth.columns:
+    if earth and "regime" in earth[0]:
         keep.append("regime")
-    return scores.merge(earth[keep], left_on="earth_site", right_on="site_name", how="left")
+    by_name = {e["site_name"]: e for e in earth}
+    merged = []
+    for s in scores:
+        row = dict(s)
+        src = by_name.get(s["earth_site"], {})
+        for k in keep:
+            row[k] = src.get(k)
+        merged.append(row)
+    return merged
 
 
 def _rescore(row, weights):
@@ -126,8 +159,9 @@ def earth_sites():
 def winners():
     """Top-1 novel match per base under the official (balanced) weights."""
     s = _merged_scores()
-    top = s[s["rank_for_base"] == 1].sort_values("moon_base")
-    return _rows(top[["moon_base", "earth_site", "country", "analog_score", "lat", "lon"]])
+    top = sorted((r for r in s if r["rank_for_base"] == 1), key=lambda r: r["moon_base"])
+    cols = ["moon_base", "earth_site", "country", "analog_score", "lat", "lon"]
+    return [{c: _clean(r.get(c)) for c in cols} for r in top]
 
 
 @app.get("/api/rankings")
@@ -143,7 +177,7 @@ def rankings(base: str = Query(...),
     ranks are returned verbatim.
     """
     moon, _, _, _ = _load()
-    if base not in set(moon["base_name"]):
+    if base not in {r["base_name"] for r in moon}:
         raise HTTPException(404, f"Unknown base '{base}'")
     if preset not in PRESETS:
         raise HTTPException(400, f"Unknown preset '{preset}' (choose from {sorted(PRESETS)})")
@@ -156,36 +190,40 @@ def rankings(base: str = Query(...),
             custom = True
     is_default = (not custom) and preset == "balanced"
 
-    s = _merged_scores()
-    sub = s[s["moon_base"] == base].copy()
+    sub = [dict(r) for r in _merged_scores() if r["moon_base"] == base]
     if is_default:
-        sub["display_score"] = sub["analog_score"]
-        sub["display_rank"] = sub["rank_for_base"]
+        for r in sub:
+            r["display_score"] = r["analog_score"]
+            r["display_rank"] = r["rank_for_base"]
     else:
-        sub["display_score"] = sub.apply(lambda r: _rescore(r, weights), axis=1)
-        sub["display_rank"] = sub["display_score"].rank(ascending=False, method="min").astype(int)
-        sub = sub.sort_values("display_rank")
+        for r in sub:
+            r["display_score"] = _rescore(r, weights)
+        scored = [r["display_score"] for r in sub if r["display_score"] is not None]
+        for r in sub:
+            s = r["display_score"]
+            r["display_rank"] = None if s is None else 1 + sum(1 for x in scored if x > s)
+        sub.sort(key=lambda r: (r["display_rank"] is None, r["display_rank"] or 0))
     cols = ["display_rank", "earth_site", "country", "lat", "lon", "site_type", "terrain_type",
             "display_score", "analog_score", "slope_mean_deg", "pct_slope_under_10deg",
             "temp_mean_c", "temp_seasonal_range_c", "sand_pct", "clay_pct",
             "coarse_fragments_pct", "dist_slope", "dist_flat", "dist_temperature",
             "dist_relief", "dist_soil"]
-    if "regime" in sub.columns:
+    if sub and "regime" in sub[0]:
         cols.insert(7, "regime")
     return {"base": base, "preset": preset, "weights": weights,
-            "official": is_default, "results": _rows(sub[cols])}
+            "official": is_default,
+            "results": [{c: _clean(r.get(c)) for c in cols} for r in sub]}
 
 
 @app.get("/api/compare")
 def compare(base: str = Query(...), site: str = Query(...)):
     moon, earth, scores, _ = _load()
-    b = moon[moon["base_name"] == base]
-    e = earth[earth["site_name"] == site]
-    s = scores[(scores["moon_base"] == base) & (scores["earth_site"] == site)]
-    if b.empty or e.empty or s.empty:
+    b = next((r for r in moon if r["base_name"] == base), None)
+    e = next((r for r in earth if r["site_name"] == site), None)
+    s = next((r for r in scores if r["moon_base"] == base and r["earth_site"] == site), None)
+    if b is None or e is None or s is None:
         raise HTTPException(404, "Unknown base/site pair")
-    b, e, s = b.iloc[0], e.iloc[0], s.iloc[0]
-    radar = {k: (None if pd.isna(s[f"dist_{k}"]) else round(1 - float(s[f"dist_{k}"]), 3))
+    radar = {k: (None if s.get(f"dist_{k}") is None else round(1 - float(s[f"dist_{k}"]), 3))
              for k in PILLARS}
     return {
         "base": base, "site": site,
@@ -210,11 +248,11 @@ def compare(base: str = Query(...), site: str = Query(...)):
 @app.get("/api/mars")
 def mars():
     _, earth, _, m = _load()
-    ref = m.iloc[0]
-    e = earth.copy()
-    e["slope_gap"] = (e["slope_mean_deg"] - float(ref["slope_mean_deg"])).abs()
-    closest = e.nsmallest(3, "slope_gap")[["site_name", "country", "slope_mean_deg", "pct_slope_under_10deg"]]
-    return {"region": _rows(m)[0], "closest_earth_sites": _rows(closest)}
+    ref = m[0]
+    ranked = sorted(earth, key=lambda e: abs(e["slope_mean_deg"] - float(ref["slope_mean_deg"])))
+    cols = ["site_name", "country", "slope_mean_deg", "pct_slope_under_10deg"]
+    closest = [{c: _clean(r.get(c)) for c in cols} for r in ranked[:3]]
+    return {"region": _rows(m)[0], "closest_earth_sites": closest}
 
 
 @app.get("/api/methodology", response_class=HTMLResponse)

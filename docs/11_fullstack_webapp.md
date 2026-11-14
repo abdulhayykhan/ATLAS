@@ -125,3 +125,14 @@ Views (hash-routed, one page shown at a time):
 - For a static-only demo, the Streamlit app remains available; the web app
   supersedes it for presentation because of the responsive layout and the
   API, which other teams/tools can consume directly.
+
+## Deployment note — Vercel-ready
+
+The web app deploys to **Vercel** with zero configuration: the repo-root
+`pyproject.toml` declares the light runtime dependencies (fastapi + markdown)
+and `[tool.vercel] entrypoint = "webapp.backend.main:app"`, with the
+StaticFiles mounts promoted to the CDN (`cdn = true`). The backend reads the
+CSVs with the standard-library `csv` module (no pandas), which keeps the
+serverless bundle small; behaviour was re-verified end-to-end in a clean
+pandas-free environment after that change. Step-by-step: `docs/12`, §12.3.
+Local runs are unchanged (`bash webapp/run.sh`).

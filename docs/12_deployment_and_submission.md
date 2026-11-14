@@ -34,7 +34,27 @@
 
 ## 12.3 Deploy option B — FastAPI web app
 
-The web app is a standard ASGI service; any Python host works.
+### Vercel (recommended — zero configuration)
+
+The repository is Vercel-ready as pushed; no code or settings changes are needed at import time:
+
+1. Go to https://vercel.com/new and sign in (GitHub sign-in is easiest).
+2. **Import** the `abdulhayykhan/ATLAS` repository. (If the repo does not appear, grant Vercel access to it under the GitHub app's repository permissions.)
+3. Leave every setting at its default — Framework Preset will resolve to the Python/FastAPI runtime from `pyproject.toml`; Root Directory stays `./`; no environment variables exist.
+4. **Deploy.** Copy the resulting `*.vercel.app` URL for the submission form.
+5. Sanity-check: open the URL, then `<url>/api/health` must return `{"status": "ok", "moon_bases": 4, "earth_sites": 14, "score_rows": 56}`; check the Analog Finder on a phone width.
+
+How it works (so nobody has to reverse-engineer it later):
+
+- `pyproject.toml` at the repo root carries `[tool.vercel] entrypoint = "webapp.backend.main:app"` — Vercel loads that FastAPI app and routes **every** request to it; the app itself serves the API, the frontend and the `/outputs` images, exactly as locally.
+- The same file's `[project] dependencies` are the web runtime only — **fastapi + markdown**. Vercel installs these, *not* the heavy pipeline `requirements.txt` (rasterio, streamlit, scikit-learn…), which remains dedicated to `src/` and the Streamlit deployment. Python is pinned to 3.12 (`.python-version`).
+- The backend reads the precomputed `outputs/*.csv` with the **standard-library csv module** — the earlier pandas dependency was removed for exactly this reason (small bundle, fast cold starts). Behaviour was re-verified end-to-end after the change in a clean environment without pandas: identical winners (de Gerlache → Mount Erebus 72.1), rankings, presets, re-weighting, compare radar (soil null for Erebus), Mars and downloads.
+- `[tool.vercel.fastapi.static] cdn = true` promotes the app's StaticFiles mounts (frontend + outputs) to Vercel's CDN despite the app's CORS middleware.
+- Limits check: the whole runtime bundle is a few MB (outputs ≈ 2.4 MB of images + CSVs), far under Vercel's 500 MB Python bundle limit; the app is stateless and read-only, so serverless execution fits it exactly. First request after idle may cold-start for a second or two — normal.
+
+### Other Python hosts
+
+The web app is also a standard ASGI service; any Python host works.
 
 **Local / VPS:**
 ```bash

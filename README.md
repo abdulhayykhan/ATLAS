@@ -17,7 +17,8 @@
 | Full-stack web app (FastAPI API + responsive vanilla JS UI) | `webapp/` (`bash webapp/run.sh`) | ✅ |
 | Methodology, formula, weights, limitations | `outputs/methodology.md` | ✅ |
 | Full dataset documentation | `DATA_DOCUMENTATION.md` | ✅ |
-| Complete codebase on GitHub | this repository (`main`, 55 files) | ✅ pushed 14 Nov 2026 — see `docs/12_deployment_and_submission.md` |
+| Complete codebase on GitHub | this repository (`main`) | ✅ pushed 14 Nov 2026 — see `docs/12_deployment_and_submission.md` |
+| Vercel deployment readiness | `pyproject.toml` (`[tool.vercel]` entrypoint) | ✅ configured & verified locally in a clean environment (no pandas) |
 
 ## Documentation
 
@@ -34,6 +35,14 @@ pipeline outputs, including live mission re-weighting) and a framework-free
 HTML/CSS/JS frontend (`webapp/frontend/`) that is fully responsive from phones to
 desktops. It reads only `outputs/` — no raw data needed at runtime. Details:
 `docs/11_fullstack_webapp.md`. The Streamlit app below remains available too.
+
+**Deploy on Vercel (zero configuration):** the repo root `pyproject.toml` declares the
+web app's light runtime dependencies (FastAPI + Markdown only — the backend reads the
+CSVs with the standard library) and points Vercel at the app via
+`[tool.vercel] entrypoint = "webapp.backend.main:app"`. Just import this repository at
+[vercel.com/new](https://vercel.com/new) and deploy — no settings to change, no
+environment variables. One-click: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fabdulhayykhan%2FATLAS)
+Full deployment notes: `docs/12_deployment_and_submission.md`.
 
 ## Quick start
 

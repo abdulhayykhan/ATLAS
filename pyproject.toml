@@ -1,0 +1,33 @@
+# ATLAS — project manifest.
+#
+# Its main job is Vercel deployment of the web app (see docs/12):
+# Vercel reads the runtime dependencies below (NOT the heavy pipeline
+# requirements.txt, which stays dedicated to the src/ pipeline and the
+# Streamlit app), and loads the FastAPI app from the entrypoint module.
+# The backend only needs fastapi + markdown — it reads the precomputed
+# outputs/*.csv with the standard library.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atlas"
+version = "2.0.0"
+description = "ATLAS — Analog Terrain & Lunar Alignment System (Team Binary Knights, NASA Space Apps 2026)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.110",
+    "markdown>=3.6",
+]
+
+[tool.setuptools]
+py-modules = []
+
+[tool.vercel]
+entrypoint = "webapp.backend.main:app"
+
+# The app uses top-level CORS middleware; promote the StaticFiles mounts
+# (frontend at /, images at /outputs) to the Vercel CDN anyway.
+[tool.vercel.fastapi.static]
+cdn = true
