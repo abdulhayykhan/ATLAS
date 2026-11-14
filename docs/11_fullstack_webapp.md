@@ -147,8 +147,10 @@ and one mint accent, telemetry in DM Mono):
   Method / Data) + a top telemetry bar (mission, base selector, phase, active
   preset, sites-scored counter, live session clock). On phones the rail becomes
   a bottom tab bar and the console stacks over a 250 px map band.
-- **Console (Overview):** the Leaflet map fills the stage (CARTO dark tiles;
-  GLOBE toggle switches to Esri satellite imagery). Floating over it: Selected
+- **Console (Overview):** the Leaflet map fills the stage (Google map tiles via
+  the free embedded tile service — **no API key anywhere in the app**; MAP mode
+  is the Google roadmap rendered dark through a CSS filter on the tile pane,
+  GLOBE switches to Google hybrid satellite imagery). Floating over it: Selected
   Base panel, top-4 Analog Ranking (fleet-style rows with status dots — Best
   match / Ranked / Soil gap), Model Health (per-pillar data coverage x/10 —
   soil reads 8/10 because two sites have no SoilGrids coverage), Mission Log

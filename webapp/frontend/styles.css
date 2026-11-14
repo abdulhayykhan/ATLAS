@@ -88,6 +88,9 @@ button{font:inherit;cursor:pointer}
   radial-gradient(600px 400px at 25% 80%,#0a141e 0%,transparent 60%),#04070a}
 #map{position:absolute;inset:0;z-index:0;background:#04070a}
 .leaflet-container{font:inherit;background:#04070a}
+/* Google roadmap tiles are light; in MAP mode a filter on the tile pane only
+   renders them dark — markers, rings and labels in other panes stay untouched. */
+#map.dark-tiles .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.6)}
 .leaflet-control-attribution{background:rgba(8,11,15,.72)!important;color:#5f6b76!important;font-size:9px!important;padding:0 4px}
 .leaflet-control-attribution a{color:#77828d!important}
 .leaflet-popup-content-wrapper{background:var(--glass-solid);color:var(--txt);border-radius:8px;border:1px solid var(--brd);box-shadow:0 10px 26px rgba(0,0,0,.5)}

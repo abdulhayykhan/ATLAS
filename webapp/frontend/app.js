@@ -102,11 +102,15 @@ function initMap() {
   if (typeof L === "undefined") { $("#mapFallback").hidden = false; return; }
   try {
     state.map = L.map("map", { zoomControl: false, worldCopyJump: true }).setView([24, 6], 2);
-    state.tileDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      { attribution: "© OpenStreetMap contributors © CARTO", maxZoom: 11, subdomains: "abcd" });
-    state.tileGlobe = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { attribution: "Imagery © Esri & contributors", maxZoom: 11 });
+    /* Google map tiles via the free embedded tile service — no API key needed.
+       MAP = Google roadmap, rendered dark by a CSS filter on the tile pane.
+       GLOBE = Google hybrid satellite (imagery + labels). */
+    state.tileDark = L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
+      { attribution: "Map data © Google", maxZoom: 18, subdomains: ["0", "1", "2", "3"] });
+    state.tileGlobe = L.tileLayer("https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+      { attribution: "Imagery © Google", maxZoom: 18, subdomains: ["0", "1", "2", "3"] });
     state.tileDark.addTo(state.map);
+    state.map.getContainer().classList.add("dark-tiles");
     state.siteLayer = L.layerGroup().addTo(state.map);
     state.focusLayer = L.layerGroup().addTo(state.map);
     let tileErrs = 0;
@@ -120,6 +124,7 @@ function setTileMode(globe) {
   if (!state.map) return;
   $("#tglMap").classList.toggle("on", !globe);
   $("#tglGlobe").classList.toggle("on", globe);
+  state.map.getContainer().classList.toggle("dark-tiles", !globe);
   if (globe) { state.map.removeLayer(state.tileDark); state.tileGlobe.addTo(state.map); }
   else { state.map.removeLayer(state.tileGlobe); state.tileDark.addTo(state.map); }
 }
