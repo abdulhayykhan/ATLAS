@@ -14,12 +14,25 @@
 | Mars quick-look — Jezero Crater terrain | `src/preprocess_mars.py` → `outputs/mars_profiles.csv` | ✅ run |
 | Scoring & ranking (56 base×site pairs) + regime clustering + radar plots | `src/model.py` → `outputs/scores_ranking.csv`, `outputs/radar_*.png` | ✅ run |
 | Interactive app (map, compare, downloads) | `src/app.py` | ✅ |
+| Full-stack web app (FastAPI API + responsive vanilla JS UI) | `webapp/` (`bash webapp/run.sh`) | ✅ |
 | Methodology, formula, weights, limitations | `outputs/methodology.md` | ✅ |
 | Full dataset documentation | `DATA_DOCUMENTATION.md` | ✅ |
 
 ## Documentation
 
 **Complete step-by-step documentation of every phase** — research, data acquisition, Moon/Earth/Mars processing, scoring, the app, validation, reproduction and Challenge Guide #09 compliance — is indexed in **[DOCUMENTATION.md](DOCUMENTATION.md)** (folder `docs/`).
+
+## Full-stack web app (FastAPI + vanilla JS)
+
+```bash
+bash webapp/run.sh        # http://localhost:8000 — API + responsive web UI
+```
+
+The `webapp/` folder contains a FastAPI backend (`webapp/backend/`, JSON API over the
+pipeline outputs, including live mission re-weighting) and a framework-free
+HTML/CSS/JS frontend (`webapp/frontend/`) that is fully responsive from phones to
+desktops. It reads only `outputs/` — no raw data needed at runtime. Details:
+`docs/11_fullstack_webapp.md`. The Streamlit app below remains available too.
 
 ## Quick start
 

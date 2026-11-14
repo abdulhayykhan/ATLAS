@@ -18,6 +18,7 @@ in the [`docs/`](docs/) folder:
 | 08 | [Validation & QA](docs/08_validation_and_qa.md) | The full audit trail: nine verification exercises and the known limitations |
 | 09 | [Reproduction Guide](docs/09_reproduction_guide.md) | From-zero rebuild: environment, commands, acceptance numbers, troubleshooting table |
 | 10 | [Guide #09 Compliance](docs/10_guide09_compliance.md) | Objective-by-objective compliance matrix and answers to the guide's seven questions |
+| 11 | [Phase 5 — Full-Stack Web App](docs/11_fullstack_webapp.md) | FastAPI backend API reference and the responsive vanilla HTML/CSS/JS frontend |
 
 Related documents:
 

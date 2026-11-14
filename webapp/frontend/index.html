@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATLAS — Lunar Analog Finder | Team Binary Knights</title>
+<meta name="description" content="ATLAS discovers NEW Earth locations that analog the Moon's permanent base sites and Mars — measured from NASA LRO, Copernicus, NASA POWER and SoilGrids data.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌕</text></svg>">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="#overview" data-nav="overview">
+    <span class="brand-moon">🌕</span>
+    <span class="brand-text">ATLAS<small>Analog Terrain &amp; Lunar Alignment System</small></span>
+  </a>
+  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">☰</button>
+  <nav class="main-nav" id="mainNav">
+    <a href="#overview" data-nav="overview" class="active">Overview</a>
+    <a href="#bases" data-nav="bases">Moon Bases</a>
+    <a href="#finder" data-nav="finder">Analog Finder</a>
+    <a href="#compare" data-nav="compare">Compare</a>
+    <a href="#mars" data-nav="mars">Mars</a>
+    <a href="#methodology" data-nav="methodology">Methodology</a>
+  </nav>
+</header>
+
+<main>
+  <!-- ============================ OVERVIEW ============================ -->
+  <section id="page-overview" class="page active">
+    <div class="hero">
+      <h1>Which places on Earth are most like the Moon's future base sites?</h1>
+      <p class="hero-sub">NASA plans permanent bases at four lunar polar craters — <strong>Peary, Shackleton,
+      de Gerlache and Amundsen</strong>. Before hardware and crews go there, they must be tested somewhere on
+      Earth that behaves the same way. Following Challenge Guide #09, ATLAS is a <strong>discovery engine for
+      NEW analog sites</strong>: the world-famous analogs are deliberately excluded, and 14 lesser-known
+      extreme places are measured and ranked against the bases instead.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#finder" data-nav="finder">Find analogs →</a>
+        <a class="btn btn-ghost" href="#methodology" data-nav="methodology">How it works</a>
+      </div>
+      <div class="stat-strip">
+        <div class="stat"><span class="stat-num">4</span><span class="stat-label">Moon bases measured</span></div>
+        <div class="stat"><span class="stat-num">14</span><span class="stat-label">NEW Earth sites</span></div>
+        <div class="stat"><span class="stat-num">6</span><span class="stat-label">terrain types</span></div>
+        <div class="stat"><span class="stat-num">5</span><span class="stat-label">open repositories</span></div>
+        <div class="stat"><span class="stat-num">56</span><span class="stat-label">ranked matches</span></div>
+      </div>
+    </div>
+
+    <h2 class="section-title">The four bases — measured, not guessed</h2>
+    <div class="card-grid" id="baseChips"><p class="loading">Loading base data…</p></div>
+
+    <h2 class="section-title">🏆 Top NEW match for each base</h2>
+    <div class="card-grid" id="winnerCards"><p class="loading">Loading winners…</p></div>
+
+    <div class="note-box">
+      <strong>How validation worked:</strong> before discovering anything, the engine was run on the classic
+      catalogued analogs — untuned, it ranked McMurdo Dry Valleys #1 for three bases and Atacama #1 for Peary,
+      the literature's own answers. Those sites were then <em>removed</em> and the 14 new sites ranked.
+      Full story on the Methodology page.
+    </div>
+  </section>
+
+  <!-- ============================ MOON BASES ============================ -->
+  <section id="page-bases" class="page">
+    <h2 class="section-title">The four Moon bases</h2>
+    <p class="section-sub">Every value below was measured from NASA LRO data — LOLA topography, LPSR shadow
+    masks, PGDA-69 illumination models and Diviner temperatures, for <strong>both</strong> lunar poles.</p>
+    <div id="baseProfiles"><p class="loading">Loading…</p></div>
+  </section>
+
+  <!-- ============================ FINDER ============================ -->
+  <section id="page-finder" class="page">
+    <h2 class="section-title">Earth Analog Finder</h2>
+    <p class="section-sub">14 newly-discovered candidate sites, ranked per Moon base. The classic,
+    already-catalogued analogs (Atacama, Mauna Kea, Haughton, Rio Tinto, McMurdo, Meteor Crater, Iceland,
+    Svalbard) are excluded on purpose, per Challenge Guide #09.</p>
+
+    <div class="controls-card">
+      <div class="control-row">
+        <label class="control">
+          <span>Moon base</span>
+          <select id="finderBase"></select>
+        </label>
+        <div class="control grow">
+          <span>Mission profile — re-weights the score live</span>
+          <div class="chips" id="presetChips">
+            <button class="chip active" data-preset="balanced">Balanced</button>
+            <button class="chip" data-preset="rover">🚗 Rover mobility</button>
+            <button class="chip" data-preset="habitat">🏠 Habitat &amp; structures</button>
+            <button class="chip" data-preset="isru">🔬 Science &amp; ISRU</button>
+          </div>
+        </div>
+      </div>
+      <details class="weights-box">
+        <summary>Fine-tune the weights</summary>
+        <div class="sliders" id="weightSliders"></div>
+      </details>
+      <p class="custom-banner hidden" id="customBanner"></p>
+    </div>
+
+    <div id="finderMap" class="map-box"></div>
+    <div class="table-wrap">
+      <table class="data-table" id="rankingTable">
+        <thead><tr>
+          <th>#</th><th>Site</th><th>Terrain</th><th>Score</th><th>Slope °</th>
+          <th>Flat &lt;10° %</th><th>Temp °C</th><th>Seasonal °C</th><th>Sand/Clay/CF %</th>
+        </tr></thead>
+        <tbody><tr><td colspan="9" class="loading">Loading rankings…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="rank-cards" id="rankCards"></div>
+
+    <details class="notes-box">
+      <summary>Why each site is a NEW analog — discovery notes</summary>
+      <div id="discoveryNotes"></div>
+    </details>
+
+    <div class="download-row">
+      <a class="btn btn-ghost" href="/api/downloads/scores" download>⬇ Full ranking (CSV)</a>
+      <a class="btn btn-ghost" href="/api/downloads/earth" download>⬇ Earth profiles (CSV)</a>
+      <a class="btn btn-ghost" href="/api/downloads/moon" download>⬇ Moon profiles (CSV)</a>
+    </div>
+  </section>
+
+  <!-- ============================ COMPARE ============================ -->
+  <section id="page-compare" class="page">
+    <h2 class="section-title">Head-to-head comparison</h2>
+    <div class="controls-card">
+      <div class="control-row">
+        <label class="control"><span>Moon base</span><select id="cmpBase"></select></label>
+        <label class="control"><span>Earth site</span><select id="cmpSite"></select></label>
+      </div>
+    </div>
+    <div class="compare-head" id="compareHead"></div>
+    <div class="compare-grid">
+      <div class="compare-radar card" id="radarBox"></div>
+      <div class="table-wrap card">
+        <table class="data-table" id="compareTable">
+          <thead><tr><th>Measure</th><th id="cmpBaseName">Moon base</th><th id="cmpSiteName">Earth site</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="fineprint">Sun visibility and Earth visibility are deliberately not scored — Earth has no
+        counterpart for them. They are mission context on the Moon Bases page. A soil bar drawn at half height
+        means the pillar was not scored for that site (no SoilGrids coverage) — missing data is never scored as zero.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ MARS ============================ -->
+  <section id="page-mars" class="page">
+    <h2 class="section-title">And Mars?</h2>
+    <p class="section-sub">The same terrain method runs on Mars data. Jezero Crater (Perseverance's home) was
+    measured from NASA's MOLA instrument exactly the way the Moon bases were measured — fetched as a ~3 MB
+    window of the PDS MEGDR tile by HTTP range requests, not a bulk download.</p>
+    <div id="marsBox"><p class="loading">Loading…</p></div>
+    <div class="note-box">Extending ATLAS to a full Mars ranking (more regions, THEMIS temperature) is the
+    roadmap item after this challenge — labelled as future work, not hidden.</div>
+  </section>
+
+  <!-- ============================ METHODOLOGY ============================ -->
+  <section id="page-methodology" class="page">
+    <h2 class="section-title">Methodology &amp; Sources</h2>
+    <article class="markdown-body" id="methodologyBody"><p class="loading">Loading methodology…</p></article>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p><strong>ATLAS</strong> — Analog Terrain &amp; Lunar Alignment System · Team <strong>Binary Knights</strong> ·
+  NASA Space Apps Challenge 2026</p>
+  <p class="fineprint">Data: NASA PDS (LOLA, LPSR, Diviner, MOLA) · NASA PGDA · Copernicus DEM GLO-30 © ESA ·
+  NASA POWER · SoilGrids 2.0 © ISRIC (CC BY 4.0). Scores are within-pool rankings under the published formula.</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
