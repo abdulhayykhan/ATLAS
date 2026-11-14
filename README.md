@@ -17,6 +17,10 @@
 | Methodology, formula, weights, limitations | `outputs/methodology.md` | ✅ |
 | Full dataset documentation | `DATA_DOCUMENTATION.md` | ✅ |
 
+## Documentation
+
+**Complete step-by-step documentation of every phase** — research, data acquisition, Moon/Earth/Mars processing, scoring, the app, validation, reproduction and Challenge Guide #09 compliance — is indexed in **[DOCUMENTATION.md](DOCUMENTATION.md)** (folder `docs/`).
+
 ## Quick start
 
 ```bash
