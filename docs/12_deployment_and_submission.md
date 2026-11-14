@@ -50,7 +50,7 @@ bash webapp/run.sh 8000        # http://localhost:8000
 
 **Hugging Face Spaces (Docker SDK) also works:** point the Space at this repo with the same uvicorn start command on port 7860.
 
-Sanity-check after deploy: `GET /api/health` returns `{"moon_bases": 4, "earth_sites": 14, "ranking_rows": 56, ...}`; open the site on a phone — the ranking table must collapse into stacked cards and the menu into the hamburger button.
+Sanity-check after deploy: `GET /api/health` returns `{"status": "ok", "moon_bases": 4, "earth_sites": 14, "score_rows": 56}`; open the site on a phone — the ranking table must collapse into stacked cards and the menu into the hamburger button.
 
 **Which one to submit?** Both links can go in the project. If only one: the web app — it is the more polished, fully responsive interface and demonstrates the full-stack build. The Streamlit app remains the analysis workbench.
 
