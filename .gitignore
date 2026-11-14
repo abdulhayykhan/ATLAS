@@ -1,0 +1,12 @@
+# Raw geospatial & planetary datasets (>100 MB GitHub limit)
+*.hdf
+*.tif
+*.jp2
+*.img
+*.tab
+
+# Python & IDE artifacts
+__pycache__/
+*.py[cod]
+.venv/
+.ipynb_checkpoints/
