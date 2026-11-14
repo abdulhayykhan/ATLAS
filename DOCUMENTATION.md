@@ -19,6 +19,9 @@ in the [`docs/`](docs/) folder:
 | 09 | [Reproduction Guide](docs/09_reproduction_guide.md) | From-zero rebuild: environment, commands, acceptance numbers, troubleshooting table |
 | 10 | [Guide #09 Compliance](docs/10_guide09_compliance.md) | Objective-by-objective compliance matrix and answers to the guide's seven questions |
 | 11 | [Phase 5 — Full-Stack Web App](docs/11_fullstack_webapp.md) | FastAPI backend API reference and the responsive vanilla HTML/CSS/JS frontend |
+| 12 | [Deployment & Submission](docs/12_deployment_and_submission.md) | GitHub push record, deployment recipes for both apps, demo video and Space Apps portal submission checklist |
+
+**Repository status:** the complete codebase — pipeline, results, this documentation set and the web app — is pushed to https://github.com/abdulhayykhan/ATLAS (`main`, 55 files, verified 14 Nov 2026). See doc 12 for details.
 
 Related documents:
 

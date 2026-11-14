@@ -17,6 +17,7 @@
 | Full-stack web app (FastAPI API + responsive vanilla JS UI) | `webapp/` (`bash webapp/run.sh`) | ✅ |
 | Methodology, formula, weights, limitations | `outputs/methodology.md` | ✅ |
 | Full dataset documentation | `DATA_DOCUMENTATION.md` | ✅ |
+| Complete codebase on GitHub | this repository (`main`, 55 files) | ✅ pushed 14 Nov 2026 — see `docs/12_deployment_and_submission.md` |
 
 ## Documentation
 
@@ -71,7 +72,7 @@ ATLAS/
 ├── src/
 │   ├── atlas_common.py          # PDS3 label parsing + polar-stereographic ROI engine
 │   ├── preprocess_moon.py       # Phase 2A: 4 lunar base profiles
-│   ├── preprocess_earth.py      # Phase 2B: 8 Earth site profiles
+│   ├── preprocess_earth.py      # Phase 2B: 14 novel Earth site profiles
 │   ├── preprocess_mars.py       # Mars (Jezero) quick-look
 │   ├── model.py                 # Phase 3: scoring, ranking, radar plots
 │   └── app.py                   # Phase 4: Streamlit dashboard
