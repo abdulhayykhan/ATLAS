@@ -1,0 +1,33 @@
+moon_base,earth_site,dissimilarity,analog_score,dist_slope,dist_flat,dist_temperature,dist_relief,dist_soil,rank_for_base,top_match_factor,weakest_factor
+Amundsen,McMurdo Dry Valleys,0.524,59.2,0.313,0.193,0.72,0.786,,1,flat,relief
+Amundsen,Atacama Desert,0.551,57.6,0.154,0.268,0.888,0.912,0.0,2,,
+Amundsen,Svalbard (Adventdalen),0.553,57.5,0.137,0.01,0.796,0.869,0.634,3,,
+Amundsen,Mauna Kea Volcanic Field,0.603,54.7,0.148,0.272,0.906,0.673,0.856,4,,
+Amundsen,Rio Tinto,0.605,54.6,0.137,0.235,0.894,0.976,0.554,5,,
+Amundsen,Iceland Volcanic Fields,0.642,52.6,0.35,0.477,0.814,0.899,0.711,6,,
+Amundsen,"Haughton Crater, Devon Island",0.66,51.7,0.159,0.296,0.762,0.983,1.0,7,,
+Amundsen,Meteor Crater,0.689,50.2,0.486,0.557,0.867,1.0,0.523,8,,
+Peary,Atacama Desert,0.441,64.3,0.026,0.032,0.982,0.106,0.0,1,slope,temperature
+Peary,Rio Tinto,0.496,60.9,0.008,0.001,0.988,0.17,0.554,2,,
+Peary,Svalbard (Adventdalen),0.503,60.5,0.266,0.246,0.89,0.062,0.634,3,,
+Peary,McMurdo Dry Valleys,0.518,59.6,0.442,0.429,0.814,0.021,,4,,
+Peary,Iceland Volcanic Fields,0.518,59.6,0.221,0.241,0.908,0.092,0.711,4,,
+Peary,Meteor Crater,0.539,58.3,0.357,0.321,0.961,0.193,0.523,6,,
+Peary,"Haughton Crater, Devon Island",0.55,57.7,0.03,0.06,0.856,0.176,1.0,7,,
+Peary,Mauna Kea Volcanic Field,0.622,53.7,0.277,0.508,1.0,0.133,0.856,8,,
+Shackleton,McMurdo Dry Valleys,0.423,65.5,0.201,0.25,0.706,0.431,,1,slope,temperature
+Shackleton,Svalbard (Adventdalen),0.55,57.7,0.377,0.432,0.782,0.514,0.634,2,,
+Shackleton,Mauna Kea Volcanic Field,0.575,56.3,0.366,0.171,0.892,0.318,0.856,3,,
+Shackleton,Atacama Desert,0.659,51.7,0.668,0.71,0.873,0.558,0.0,4,,
+Shackleton,Rio Tinto,0.691,50.1,0.651,0.677,0.879,0.622,0.554,5,,
+Shackleton,"Haughton Crater, Devon Island",0.752,47.1,0.673,0.739,0.747,0.628,1.0,6,,
+Shackleton,Iceland Volcanic Fields,0.801,44.9,0.864,0.92,0.8,0.544,0.711,7,,
+Shackleton,Meteor Crater,0.865,42.1,1.0,1.0,0.853,0.645,0.523,8,,
+de Gerlache,McMurdo Dry Valleys,0.355,70.2,0.153,0.077,0.653,0.298,,1,flat,temperature
+de Gerlache,Svalbard (Adventdalen),0.449,63.8,0.022,0.259,0.729,0.381,0.634,2,,
+de Gerlache,Atacama Desert,0.499,60.7,0.314,0.537,0.821,0.425,0.0,3,,
+de Gerlache,Mauna Kea Volcanic Field,0.506,60.3,0.012,0.003,0.839,0.186,0.856,4,,
+de Gerlache,Rio Tinto,0.544,58.0,0.297,0.504,0.827,0.489,0.554,5,,
+de Gerlache,"Haughton Crater, Devon Island",0.615,54.1,0.319,0.565,0.695,0.495,1.0,6,,
+de Gerlache,Iceland Volcanic Fields,0.634,53.0,0.51,0.746,0.747,0.411,0.711,7,,
+de Gerlache,Meteor Crater,0.686,50.4,0.646,0.827,0.8,0.513,0.523,8,,

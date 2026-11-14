@@ -10,3 +10,6 @@ __pycache__/
 *.py[cod]
 .venv/
 .ipynb_checkpoints/
+
+# uppercase PDS products
+*.IMG

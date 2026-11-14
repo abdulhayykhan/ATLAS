@@ -1,0 +1,16 @@
+name: atlas
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - rasterio
+  - gdal
+  - numpy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - pillow
+  - streamlit
+  - folium
+  - streamlit-folium
+  - plotly
+  - pyarrow

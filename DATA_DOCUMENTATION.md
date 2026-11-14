@@ -133,3 +133,62 @@ During preprocessing (`src/preprocess.py`), Earth rasters are standardized onto 
 | **Surface Roughness** | `ldrm_75s_240m` roughness index | Terrain Ruggedness Index (TRI) from `ETOPO_2022` | Standard deviation of elevation within moving $3 \times 3$ kernel. |
 | **Mean & Extreme Temp** | `pcp_avg_tbol_pols` (`slon01`, `slon48`) & `dgdr_st_avg` | `MOD11C3` July/Jan `LST_Day` & `LST_Night` | Scaled by $0.02\text{ K}$ factor; seasonal min, max, mean, and diurnal $\Delta T$ derived. |
 | **Surface Composition** | `dgdr_ra_avg` rock abundance & PSR fraction | `MOD11C3` `Emis_29/31/32` & `MCD12C1` Class 15/16 | Non-barren/non-ice pixels masked (`NaN`); standardized via `StandardScaler`. |
+---
+
+# Version 2 — As Built (14 Nov 2026)
+
+The pipeline described above was reviewed against the challenge (see the
+team review notes) and then **built**. Three coverage problems in the v1
+plan were fixed, and the Earth side was changed to a fine-resolution
+two-stage design. This section is the documentation of what ATLAS
+actually uses now. The v1 text above is kept for history.
+
+## Corrections to v1
+
+1. **North Pole added.** v1 covered only the Lunar South Pole, so **Peary
+   (88.63°N, 24.4°E) had no data at all**. Added: LDEM_80N_80M,
+   LDSM_75N_240M, LDRM_75N_240M (PDS), LPSR_81N_240M, PGDA-69 north
+   illumination set (85N, 60 m), and Diviner PCP **poln** tables.
+2. **Diviner cylindrical files removed from the baseline.**
+   `dgdr_st_avg_cyl_128` (soil temperature) and `dgdr_ra_avg_cyl_128`
+   (rock abundance) cover only **−60°…+60° latitude**; none of the four
+   polar bases exists in them (~830 MB unusable at the bases). Temperature
+   comes from the PCP polar tables (pols **and** poln, slon01 + slon48),
+   which were already in v1 and are correct.
+3. **Illumination added.** v1 had PSR only. Added PGDA Product 69
+   AVGVISIB maps: average **solar** visibility and average **Earth**
+   visibility — 85S 60 m (Shackleton, de Gerlache), 75S 120 m (Amundsen),
+   85N 60 m (Peary).
+4. **Earth terrain resolution fixed.** v1 resampled ETOPO to a 0.05°
+   (≈5.6 km) grid; at that size Meteor Crater (~1.2 km) is smaller than
+   one pixel and slopes are not comparable to the Moon's 240 m product.
+   ATLAS as built profiles eight candidate sites in fixed 20 × 20 km
+   boxes from **Copernicus DEM GLO-30 (30 m)**, with **NASA POWER**
+   temperature climatology and **SoilGrids 2.0** soil (sand/clay/coarse
+   fragments) — the soil dataset v1 lacked. The ETOPO/MODIS global scan
+   remains a documented next step, not the scoring input.
+5. **Per-base profiles, not one pooled vector.** Each base gets its own
+   ROI (Shackleton 15 km, de Gerlache 20 km, Peary 40 km, Amundsen 60 km
+   radius) and its own ranking of Earth sites. Base centres are the IAU
+   centres — note Shackleton's centre is **89.67°S, 129.78°E** (the pole
+   sits on its rim); the often-quoted "89.9°S, 0°E" is not the centre and
+   visibly mis-centres the crater.
+
+## Processing warnings discovered while building (read before reusing code)
+
+- **LDSM DN = 0 is no-data**, not 45°. It spikes at ~29% of the polar cap;
+  DN-0 pixels have ordinary ~10° DEM-gradient slopes. `preprocess_moon.py`
+  excludes DN 0 from every slope statistic.
+- **North-pole GDR grids have the opposite row handedness** to south-pole
+  grids. Validated by crater-depression tests (Rozhdestvenskiy, Byrd,
+  Sylvester, Peary in the north; Amundsen, Shoemaker, Faustini, Haworth,
+  Sverdrup in the south). `atlas_common.latlon_to_pixel` handles both.
+- **Diviner PCP raw bin minima can be outliers** (a single 12 K bin in the
+  Amundsen ROI). Cold extremes are reported as the 1st percentile.
+
+## Mars
+
+USGS's mosaic server blocks scripted range access (HTTP 403), so the Mars
+quick-look reads the **PDS MOLA MEGDR** tile `megt44n000hb` by HTTP range
+requests — only the ~3 MB Jezero Crater window is fetched from the 130 MB
+tile. Output: `outputs/mars_profiles.csv`.
