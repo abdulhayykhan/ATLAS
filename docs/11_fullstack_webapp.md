@@ -136,3 +136,37 @@ CSVs with the standard-library `csv` module (no pandas), which keeps the
 serverless bundle small; behaviour was re-verified end-to-end in a clean
 pandas-free environment after that change. Step-by-step: `docs/12`, §12.3.
 Local runs are unchanged (`bash webapp/run.sh`).
+
+## Console redesign (mission-control UI)
+
+The frontend was rebuilt as an operations console in the style of a drone
+mission-control interface (dark map canvas, floating glass panels, one orange
+and one mint accent, telemetry in DM Mono):
+
+- **Shell:** 60 px icon rail (Overview / Bases / Finder / Compare / Mars /
+  Method / Data) + a top telemetry bar (mission, base selector, phase, active
+  preset, sites-scored counter, live session clock). On phones the rail becomes
+  a bottom tab bar and the console stacks over a 250 px map band.
+- **Console (Overview):** the Leaflet map fills the stage (CARTO dark tiles;
+  GLOBE toggle switches to Esri satellite imagery). Floating over it: Selected
+  Base panel, top-4 Analog Ranking (fleet-style rows with status dots — Best
+  match / Ranked / Soil gap), Model Health (per-pillar data coverage x/10 —
+  soil reads 8/10 because two sites have no SoilGrids coverage), Mission Log
+  (INFO / MISSION / ALERT entries generated from real app events, including the
+  soil-gap alerts, with working tab filters), a Site Feed panel (the selected
+  base's real LOLA hillshade under a reticle, HUD tapes carrying the #1 site's
+  slope and temperature, big analog score), four Moon-base cards, and a map
+  legend. Map annotations are real Leaflet layers: orange ring + BEST MATCH
+  label on the #1 site, mint ring on the runner-up, dashed rank path through
+  the top 3; the initial view fitBounds-pads around the panels so the matches
+  sit in the visible corridor.
+- **Workspaces:** Bases, Finder, Compare, Mars and Methodology open as one
+  large glass panel over the same map. All previous behaviour is preserved:
+  presets + custom weight sliders with live re-ranking (shared state between
+  console and Finder), expandable discovery notes, radar with hollow markers
+  for unscored pillars, CSV downloads.
+- **Robustness:** Leaflet 1.9.4 is vendored under `webapp/frontend/vendor/`
+  (no CDN dependency); the map-fallback notice appears only after repeated
+  tile errors and clears on the next successful tile; zero JS errors and every
+  view were verified with headless-Chromium screenshots at desktop and phone
+  sizes before this shipped.

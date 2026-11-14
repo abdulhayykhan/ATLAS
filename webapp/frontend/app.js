@@ -1,10 +1,14 @@
-/* ATLAS frontend — vanilla JS. Talks only to the FastAPI backend (/api/*). */
+/* ATLAS console frontend — vanilla JS. Talks only to the FastAPI backend (/api/*).
+   Layout: the map is the canvas; the console (overview) floats glass panels over
+   it; the other views open as one large glass workspace over the same map. */
 "use strict";
 
 const $ = (s, el) => (el || document).querySelector(s);
 const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
 const fmt = (v, d = 1) => (v === null || v === undefined || Number.isNaN(v)) ? "—" : Number(v).toFixed(d);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const latFmt = (v) => `${fmt(Math.abs(v), 2)}°${v < 0 ? "S" : "N"}`;
+const lonFmt = (v) => `${fmt(Math.abs(v), 2)}°${v < 0 ? "W" : "E"}`;
 
 async function api(path) {
   const r = await fetch(path);
@@ -14,8 +18,10 @@ async function api(path) {
 
 /* ------------------------------------------------------------------ state */
 const state = {
-  bases: [], sites: [], winners: [],
-  finder: { base: null, preset: "balanced", weights: null, map: null, layer: null, loaded: false },
+  bases: [], sites: [], winners: [], health: null,
+  base: "Shackleton", preset: "balanced", weights: null,
+  ranking: null, map: null, siteLayer: null, focusLayer: null, tileDark: null, tileGlobe: null,
+  log: [], logTab: "all",
   compareLoaded: false, marsLoaded: false, methodologyLoaded: false,
 };
 const PRESET_WEIGHTS = {
@@ -24,68 +30,301 @@ const PRESET_WEIGHTS = {
   habitat:  { slope: 10, flat: 35, temperature: 20, soil: 10, relief: 25 },
   isru:     { slope: 15, flat: 10, temperature: 25, soil: 35, relief: 15 },
 };
+const PRESET_LABELS = { balanced: "BALANCED", rover: "ROVER MOBILITY", habitat: "HABITAT & STRUCTURES", isru: "SCIENCE & ISRU" };
 const PILLAR_LABELS = { slope: "Slope", flat: "Flat area", temperature: "Temperature", soil: "Soil proxy", relief: "Relief" };
+const PHASES = { overview: "CONSOLE", bases: "BASE SURVEY", finder: "RANKING", compare: "COMPARISON", mars: "MARS SURVEY", methodology: "DOCUMENTATION" };
+const BASE_NOTES = {
+  "Peary": "North-pole base — processed from the 80N/75N LOLA grids and the Diviner poln temperature tables.",
+  "Shackleton": "IAU centre 89.67°S 129.78°E — the pole itself sits on the rim; a third of the study area never sees the Sun.",
+  "de Gerlache": "Rim site with the warmest seasonal mean of the four bases — still −184.4 °C.",
+  "Amundsen": "Largest study area (60 km radius), measured from the wider 80S mosaic — it lies outside the 87–90°S high-resolution cap.",
+};
 
-/* -------------------------------------------------------------- navigation */
+/* ------------------------------------------------------------- session clock */
+const T0 = Date.now();
+const elapsed = () => {
+  const s = Math.floor((Date.now() - T0) / 1000);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
+};
+setInterval(() => { const el = $("#topTimer"); if (el) el.textContent = elapsed(); }, 1000);
+
+/* --------------------------------------------------------------- mission log */
+function addLog(type, text) {
+  state.log.unshift({ type, text, ts: elapsed() });
+  if (state.log.length > 40) state.log.pop();
+  renderLog();
+}
+function renderLog() {
+  const box = $("#missionLog");
+  if (!box) return;
+  const alerts = state.log.filter((e) => e.type === "alert").length;
+  $("#alertCount").textContent = alerts;
+  const rows = state.log.filter((e) =>
+    state.logTab === "all" ? true : e.type === state.logTab);
+  box.innerHTML = rows.length ? rows.map((e) => `
+    <div class="lrow ${e.type === "alert" ? "alert" : ""}">
+      <span class="lt ${e.type}">${e.type.toUpperCase()}</span>
+      <span class="lts mono">${e.ts}</span>
+      <span class="ltx">${esc(e.text)}</span>
+    </div>`).join("") : `<p class="loading">No entries in this tab yet.</p>`;
+}
+$$("#logTabs .ltab").forEach((b) => b.addEventListener("click", () => {
+  $$("#logTabs .ltab").forEach((x) => x.classList.toggle("on", x === b));
+  state.logTab = b.dataset.logtab;
+  renderLog();
+}));
+
+/* ---------------------------------------------------------------- navigation */
 function showPage(name) {
-  $$(".page").forEach((p) => p.classList.toggle("active", p.id === `page-${name}`));
-  $$(".main-nav a").forEach((a) => a.classList.toggle("active", a.dataset.nav === name));
-  $("#mainNav").classList.remove("open");
-  $("#navToggle").setAttribute("aria-expanded", "false");
-  window.scrollTo({ top: 0 });
-  if (name === "finder") initFinder();
+  $("#stage").dataset.view = name;
+  $$(".view").forEach((p) => p.classList.toggle("active", p.id === `page-${name}`));
+  $$(".ritem[data-nav]").forEach((a) => a.classList.toggle("active", a.dataset.nav === name));
+  $("#topPhase").textContent = PHASES[name] || "CONSOLE";
   if (name === "compare") initCompare();
   if (name === "mars") initMars();
   if (name === "methodology") initMethodology();
-  if (state.finder.map && name === "finder") setTimeout(() => state.finder.map.invalidateSize(), 60);
+  if (state.map) setTimeout(() => state.map.invalidateSize(), 80);
 }
 function route() {
   const name = (location.hash || "#overview").slice(1);
   const valid = ["overview", "bases", "finder", "compare", "mars", "methodology"];
   showPage(valid.includes(name) ? name : "overview");
 }
-document.addEventListener("click", (e) => {
-  const a = e.target.closest("[data-nav]");
-  if (a) { /* hash change handles it */ }
-});
-$("#navToggle").addEventListener("click", () => {
-  const nav = $("#mainNav");
-  nav.classList.toggle("open");
-  $("#navToggle").setAttribute("aria-expanded", nav.classList.contains("open"));
-});
 window.addEventListener("hashchange", route);
+$("#railData").addEventListener("click", () => {
+  setTimeout(() => { const d = $("#downloads"); if (d) d.scrollIntoView({ behavior: "smooth", block: "center" }); }, 350);
+});
 
-/* ---------------------------------------------------------------- overview */
-async function loadOverview() {
+/* --------------------------------------------------------------------- map */
+function initMap() {
+  const box = $("#map");
+  if (typeof L === "undefined") { $("#mapFallback").hidden = false; return; }
   try {
-    state.bases = await api("/api/moon-bases");
-    state.winners = await api("/api/winners");
-    $("#baseChips").innerHTML = state.bases.map((b) => `
-      <div class="card base-chip">
-        <h3>${esc(b.base_name)}</h3>
-        <span class="pole ${b.pole === "S" ? "south" : ""}">${b.pole === "N" ? "NORTH POLE" : "SOUTH POLE"}</span>
-        <div class="metric-line"><span>Coordinates</span><b>${fmt(b.lat, 2)}°, ${fmt(b.lon, 2)}°</b></div>
-        <div class="metric-line"><span>Sun visibility</span><b>${fmt(b.sun_visibility_pct)}%</b></div>
-        <div class="metric-line"><span>Earth visibility</span><b>${fmt(b.earth_visibility_pct)}%</b></div>
-        <div class="metric-line"><span>Permanently shadowed</span><b>${fmt(b.psr_pct)}%</b></div>
-        <div class="metric-line"><span>Seasonal mean temp</span><b>${fmt(b.temp_seasonal_mean_c, 0)} °C</b></div>
-      </div>`).join("");
-    const byName = Object.fromEntries(state.winners.map((w) => [w.moon_base, w]));
-    $("#winnerCards").innerHTML = state.bases.map((b) => {
-      const w = byName[b.base_name]; if (!w) return "";
-      return `<div class="card winner-card">
-        <div class="for-base">Best NEW match for ${esc(b.base_name)}</div>
-        <div class="winners-name">${esc(w.earth_site)}</div>
-        <div>${esc(w.country)}</div>
-        <div class="winner-score">${fmt(w.analog_score)} <small>/ 100 analog score</small></div>
-      </div>`;
-    }).join("");
-    renderBaseProfiles();
-  } catch (err) {
-    $("#baseChips").innerHTML = `<p class="loading">Could not load data (${esc(err.message)}). Is the backend running?</p>`;
+    state.map = L.map("map", { zoomControl: false, worldCopyJump: true }).setView([24, 6], 2);
+    state.tileDark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      { attribution: "© OpenStreetMap contributors © CARTO", maxZoom: 11, subdomains: "abcd" });
+    state.tileGlobe = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { attribution: "Imagery © Esri & contributors", maxZoom: 11 });
+    state.tileDark.addTo(state.map);
+    state.siteLayer = L.layerGroup().addTo(state.map);
+    state.focusLayer = L.layerGroup().addTo(state.map);
+    let tileErrs = 0;
+    state.tileDark.on("tileerror", () => { if (++tileErrs > 6) $("#mapFallback").hidden = false; });
+    state.tileDark.on("tileload", () => { tileErrs = 0; $("#mapFallback").hidden = true; });
+    state.tileGlobe.on("tileerror", () => { if (++tileErrs > 6) $("#mapFallback").hidden = false; });
+    state.tileGlobe.on("tileload", () => { tileErrs = 0; $("#mapFallback").hidden = true; });
+  } catch (e) { $("#mapFallback").hidden = false; }
+}
+function setTileMode(globe) {
+  if (!state.map) return;
+  $("#tglMap").classList.toggle("on", !globe);
+  $("#tglGlobe").classList.toggle("on", globe);
+  if (globe) { state.map.removeLayer(state.tileDark); state.tileGlobe.addTo(state.map); }
+  else { state.map.removeLayer(state.tileGlobe); state.tileDark.addTo(state.map); }
+}
+$("#tglMap").addEventListener("click", () => setTileMode(false));
+$("#tglGlobe").addEventListener("click", () => setTileMode(true));
+$("#zoomIn").addEventListener("click", () => state.map && state.map.zoomIn());
+$("#zoomOut").addEventListener("click", () => state.map && state.map.zoomOut());
+
+function renderMapFocus(data) {
+  if (!state.map || !data) return;
+  state.siteLayer.clearLayers();
+  state.focusLayer.clearLayers();
+  if (!state.mapFitted && data.results.length) {
+    state.mapFitted = true;
+    const bounds = L.latLngBounds(data.results.map((r) => [r.lat, r.lon]));
+    if (window.innerWidth > 1020) {
+      state.map.fitBounds(bounds, { paddingTopLeft: [345, 75], paddingBottomRight: [415, 105], maxZoom: 3 });
+    } else {
+      state.map.fitBounds(bounds, { padding: [18, 18], maxZoom: 3 });
+    }
+  }
+  const res = data.results;
+  res.forEach((r) => {
+    const is1 = r.display_rank === 1, is2 = r.display_rank === 2;
+    const color = is1 ? "#ff7a1a" : is2 ? "#4fe3c1" : "#9aa7b1";
+    L.circleMarker([r.lat, r.lon], {
+      radius: is1 ? 8 : is2 ? 7 : 5, color, weight: 2,
+      fillColor: color, fillOpacity: is1 || is2 ? 0.9 : 0.55,
+    }).bindPopup(`<b>${esc(r.earth_site)}</b> (${esc(r.country)})<br>${esc(r.terrain_type)}<br>` +
+      `Analog Score: <b>${fmt(r.display_score)}</b> · Rank #${r.display_rank} for ${esc(data.base)}<br>` +
+      `Slope: ${fmt(r.slope_mean_deg, 2)}° · Temp: ${fmt(r.temp_mean_c)} °C`)
+      .addTo(state.siteLayer);
+  });
+  const top = res.slice(0, 3);
+  if (top.length) {
+    const [a, b] = top;
+    L.circle([a.lat, a.lon], { radius: 430000, color: "#ff7a1a", weight: 2, fillOpacity: 0.05 }).addTo(state.focusLayer);
+    L.circle([a.lat, a.lon], { radius: 680000, color: "#ff7a1a", weight: 1, dashArray: "5 7", fillOpacity: 0 }).addTo(state.focusLayer);
+    L.marker([a.lat + 7.5, a.lon], { interactive: false,
+      icon: L.divIcon({ className: "", html: `<span class="map-label">BEST MATCH · WP1</span>` }) }).addTo(state.focusLayer);
+    if (b) {
+      L.circle([b.lat, b.lon], { radius: 330000, color: "#4fe3c1", weight: 2, fillOpacity: 0.05 }).addTo(state.focusLayer);
+      L.marker([b.lat + 6, b.lon], { interactive: false,
+        icon: L.divIcon({ className: "", html: `<span class="map-label teal">RUNNER-UP</span>` }) }).addTo(state.focusLayer);
+    }
+    if (top.length > 2) {
+      L.polyline(top.map((r) => [r.lat, r.lon]),
+        { color: "#8b96a1", weight: 1.5, dashArray: "4 6", opacity: 0.8 }).addTo(state.focusLayer);
+    }
   }
 }
 
+/* ------------------------------------------------------------ base selection */
+function baseObj(name) { return state.bases.find((b) => b.base_name === name); }
+
+function renderSelectedBase() {
+  const b = baseObj(state.base);
+  if (!b) return;
+  $("#selBaseChip").textContent = `${b.pole === "N" ? "N POLE" : "S POLE"} · RANKED`;
+  $("#selBaseName").textContent = `${b.base_name} Crater`;
+  $("#selBaseCoords").textContent = `${latFmt(b.lat)} · ${lonFmt(b.lon)} · LRO LOLA / DIVINER`;
+  $("#selBaseStats").innerHTML = [
+    ["PSR area", `${fmt(b.psr_pct)}%`],
+    ["Sun vis", `${fmt(b.sun_visibility_pct)}%`],
+    ["Mean temp", `${fmt(b.temp_seasonal_mean_c, 0)} °C`],
+  ].map(([k, v]) => `<div class="sel-stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+  $("#selBaseNote").textContent = BASE_NOTES[b.base_name] || "";
+  $$("#baseCards .bcard").forEach((c) => c.classList.toggle("on", c.dataset.base === b.base_name));
+  $$("#baseSeg button").forEach((x) => x.classList.toggle("on", x.dataset.base === b.base_name));
+  const sel = $("#topBase"); if (sel && sel.value !== b.base_name) sel.value = b.base_name;
+}
+
+function renderBaseCards() {
+  $("#baseCards").innerHTML = state.bases.map((b) => `
+    <button type="button" class="glass bcard ${b.base_name === state.base ? "on" : ""}" data-base="${esc(b.base_name)}">
+      <div class="n">${esc(b.base_name.toUpperCase())} · ${b.pole}</div>
+      <div class="t mono">${fmt(b.temp_seasonal_mean_c, 0)} °C</div>
+      <div class="bbar"><i style="width:${Math.min(100, Math.max(4, b.sun_visibility_pct * 4))}%"></i></div>
+      <div class="s mono">SUN ${fmt(b.sun_visibility_pct)}%</div>
+    </button>`).join("");
+  $$("#baseCards .bcard").forEach((c) =>
+    c.addEventListener("click", () => setBase(c.dataset.base, true)));
+}
+
+function setBase(name, announce) {
+  if (!baseObj(name)) return;
+  state.base = name;
+  renderSelectedBase();
+  if (announce) addLog("mission", `Target base set to ${name} — ranking recomputed`);
+  loadRanking();
+}
+
+/* ------------------------------------------------------------------ ranking */
+async function loadRanking() {
+  const params = new URLSearchParams({ base: state.base, preset: state.preset });
+  if (state.weights) for (const k of Object.keys(PILLAR_LABELS)) params.set(k, state.weights[k]);
+  try {
+    const data = await api(`/api/rankings?${params}`);
+    state.ranking = data;
+    $("#topPreset").textContent = state.weights ? "CUSTOM" : PRESET_LABELS[state.preset];
+    renderConsoleRanking(data);
+    renderFinderList(data);
+    renderFeed(data);
+    renderMapFocus(data);
+  } catch (err) {
+    $("#consoleRanking").innerHTML = `<p class="loading">Ranking unavailable (${esc(err.message)})</p>`;
+    addLog("alert", `Ranking request failed for ${state.base} — backend unreachable`);
+  }
+}
+
+function statusOf(r) {
+  if (r.sand_pct === null || r.sand_pct === undefined) return { cls: "o", txt: "Soil gap" };
+  if (r.display_rank === 1) return { cls: "", txt: "Best match" };
+  return { cls: "t", txt: "Ranked" };
+}
+
+function renderConsoleRanking(data) {
+  $("#rankPanelTitle").textContent = `Analog Ranking — ${data.base}`;
+  $("#consoleRanking").innerHTML = data.results.slice(0, 4).map((r) => {
+    const st = statusOf(r);
+    return `<div class="frow">
+      <span class="fid">${String(r.display_rank).padStart(2, "0")} · ${esc(r.earth_site)}</span>
+      <span class="ft mono">${fmt(r.slope_mean_deg, 1)}° · ${fmt(r.pct_slope_under_10deg, 0)}%</span>
+      <span class="dotst"><span class="dot ${st.cls}"></span>${st.txt}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderFinderList(data) {
+  const banner = $("#customBanner");
+  if (data.official) { banner.hidden = true; }
+  else {
+    banner.hidden = false;
+    banner.textContent = "Custom ranking — weights: " + Object.keys(PILLAR_LABELS)
+      .map((k) => `${PILLAR_LABELS[k]} ${data.weights[k]}`).join(" · ") +
+      ". The official published ranking uses the Balanced profile.";
+  }
+  const notes = Object.fromEntries(state.sites.map((s) => [s.site_name, s]));
+  $("#rankList").innerHTML = data.results.map((r) => {
+    const s = notes[r.earth_site];
+    const gap = r.sand_pct === null || r.sand_pct === undefined;
+    return `<button type="button" class="rrow ${r.display_rank === 1 ? "top1" : ""}" data-site="${esc(r.earth_site)}">
+      <span class="rrank mono">${String(r.display_rank).padStart(2, "0")}</span>
+      <span>
+        <span class="rname">${esc(r.earth_site)}</span><span class="rtag ${gap ? "gap" : ""}">${gap ? "SOIL GAP" : esc(r.terrain_type).toUpperCase()}</span>
+        <span class="rmeta mono">${esc(r.country).toUpperCase()} · SLOPE ${fmt(r.slope_mean_deg, 2)}° · FLAT&lt;10° ${fmt(r.pct_slope_under_10deg)}% · TEMP ${fmt(r.temp_mean_c)} °C · SEASON ±${fmt(r.temp_seasonal_range_c)} °C · SOIL ${gap ? "NO DATA" : `${fmt(r.sand_pct, 0)}/${fmt(r.clay_pct, 0)}/${fmt(r.coarse_fragments_pct, 0)}`}</span>
+        ${s && s.analog_note ? `<span class="rnote" hidden>${esc(s.analog_note)}</span>` : ""}
+      </span>
+      <span class="rscore">
+        <span class="rsv mono">${fmt(r.display_score)}</span>
+        <span class="rbar"><i style="width:${Math.min(100, Math.max(0, r.display_score || 0))}%"></i></span>
+        <span class="rregime">${esc(r.regime || "")}</span>
+      </span>
+    </button>`;
+  }).join("");
+  $$("#rankList .rrow").forEach((row) => row.addEventListener("click", () => {
+    const note = $(".rnote", row);
+    if (note) note.hidden = !note.hidden;
+  }));
+}
+
+/* --------------------------------------------------------------------- feed */
+function tape(el, center, step, dec, label) {
+  if (!el || center === null || center === undefined) { if (el) el.innerHTML = ""; return; }
+  const vals = [center + 2 * step, center + step, center, center - step, center - 2 * step];
+  el.innerHTML = vals.map((v, i) =>
+    i === 2 ? `<span class="hl">${fmt(v, dec)}°</span>` : `<span>${fmt(v, dec)}°</span>`).join("") +
+    `<span class="tk">${label}</span>`;
+}
+function renderFeed(data) {
+  const top = data.results[0];
+  const b = baseObj(data.base);
+  if (!top || !b) return;
+  const site = state.sites.find((s) => s.site_name === top.earth_site) || {};
+  $("#feedTitle").textContent = `Site Feed — ${top.earth_site}`;
+  const img = $("#feedImg");
+  img.src = b.hillshade_url;
+  img.alt = `Shaded relief of ${b.base_name} crater (LOLA)`;
+  tape($("#tapeSlope"), top.slope_mean_deg, 3, 1, "SLOPE");
+  tape($("#tapeTemp"), top.temp_mean_c, 6, 0, "TEMP");
+  $("#feedScore").textContent = fmt(top.display_score);
+  $("#feedSite").textContent = `#1 for ${data.base}${data.official ? "" : " · custom weights"}`;
+  $("#feedCap").textContent = `BASE TERRAIN — ${data.base.toUpperCase()} · LOLA HILLSHADE`;
+  $("#feedFoot").innerHTML =
+    `<span>${latFmt(top.lat)} · ${lonFmt(top.lon)}</span>` +
+    `<span>${esc(top.country).toUpperCase()}</span>` +
+    `<span>ELEV ${site.elev_mean_m != null ? fmt(site.elev_mean_m, 0) + " M" : "—"}</span>`;
+}
+
+/* --------------------------------------------------------------- model health */
+function renderHealth() {
+  const n = state.sites.length || 14;
+  const cov = (key) => state.sites.filter((s) => s[key] !== null && s[key] !== undefined).length;
+  const cells = [
+    ["Slope", cov("slope_mean_deg")], ["Flat", cov("pct_slope_under_10deg")],
+    ["Temp", cov("temp_mean_c")], ["Soil", cov("sand_pct")], ["Relief", cov("elev_std_m")],
+  ];
+  $("#modelHealth").innerHTML = cells.map(([k, c]) => {
+    const score = Math.round((10 * c) / n);
+    return `<div class="hcell"><span class="dot ${score >= 10 ? "" : "o"}"></span>
+      <div class="k">${k}</div><div class="v">${score}/10</div></div>`;
+  }).join("");
+}
+
+/* -------------------------------------------------------------------- bases */
 function renderBaseProfiles() {
   const rows = [
     ["Mean elevation", "elev_mean_m", " m", 1], ["Relief — elevation std", "elev_std_m", " m", 1],
@@ -99,8 +338,7 @@ function renderBaseProfiles() {
   $("#baseProfiles").innerHTML = state.bases.map((b) => `
     <article class="base-profile">
       <div>
-        <h3>${esc(b.base_name)} <small style="color:var(--muted);font-size:.85rem">
-          ${fmt(b.lat, 2)}°, ${fmt(b.lon, 2)}° · ${fmt(b.crater_diameter_km, 0)} km crater · ${fmt(b.roi_radius_km, 0)} km study area</small></h3>
+        <h3>${esc(b.base_name)} <small>${latFmt(b.lat)}, ${lonFmt(b.lon)} · ${fmt(b.crater_diameter_km, 0)} km crater · ${fmt(b.roi_radius_km, 0)} km study area</small></h3>
         ${rows.map(([label, key, unit, d]) =>
           `<div class="metric-line"><span>${label}</span><b>${fmt(b[key], d)}${unit}</b></div>`).join("")}
         <p class="sources">Sources: ${esc(b.sources)}</p>
@@ -110,13 +348,13 @@ function renderBaseProfiles() {
         <figcaption>Shaded relief (LOLA DEM) — ${esc(b.base_name)}</figcaption>
       </figure>
     </article>`).join("") +
-    `<div class="note-box"><strong>Peary is at the North Pole</strong> — ATLAS processes both poles:
-     LDEM/LDSM/LDRM 80N–75N grids and the Diviner <em>poln</em> temperature tables are included.
-     The north grids are stored with the opposite row handedness to the south — ATLAS's mapping was
-     validated against named craters at both poles.</div>`;
+    `<div class="note-box"><strong>Validation, not decoration:</strong> before discovering anything, the
+     engine ran on the classic catalogued analogs and — untuned — ranked McMurdo Dry Valleys #1 for three
+     bases and Atacama #1 for Peary, the literature's own answers. Those sites were then removed and the
+     14 new sites ranked. Full story in the Methodology.</div>`;
 }
 
-/* ----------------------------------------------------------------- finder */
+/* ------------------------------------------------------------------- finder */
 function buildSliders(weights) {
   $("#weightSliders").innerHTML = Object.keys(PILLAR_LABELS).map((k) => `
     <div class="slider-row">
@@ -126,8 +364,8 @@ function buildSliders(weights) {
   $$("#weightSliders input[type=range]").forEach((inp) => {
     inp.addEventListener("input", () => {
       $(`#wo-${inp.dataset.pillar}`).textContent = inp.value;
-      state.finder.weights = currentSliderWeights();
-      debounceRanking(true);
+      state.weights = currentSliderWeights();
+      debounceRanking();
     });
   });
 }
@@ -137,112 +375,29 @@ function currentSliderWeights() {
   return w;
 }
 let rankTimer = null;
-function debounceRanking(custom) {
-  clearTimeout(rankTimer);
-  rankTimer = setTimeout(() => loadRanking(custom), 180);
-}
+function debounceRanking() { clearTimeout(rankTimer); rankTimer = setTimeout(loadRanking, 180); }
 
-async function initFinder() {
-  if (!state.sites.length) {
-    try { state.sites = await api("/api/earth-sites"); } catch (e) { /* notes degrade gracefully */ }
-  }
-  if (state.finder.loaded) { if (state.finder.map) refreshMap(await lastRanking()); return; }
-  state.finder.loaded = true;
-  const sel = $("#finderBase");
-  sel.innerHTML = state.bases.map((b) => `<option>${esc(b.base_name)}</option>`).join("");
-  state.finder.base = sel.value;
-  sel.addEventListener("change", () => { state.finder.base = sel.value; loadRanking(false); });
-  $$("#presetChips .chip").forEach((chip) => chip.addEventListener("click", () => {
-    $$("#presetChips .chip").forEach((c) => c.classList.toggle("active", c === chip));
-    state.finder.preset = chip.dataset.preset;
-    state.finder.weights = null;
-    buildSliders(PRESET_WEIGHTS[state.finder.preset]);
-    loadRanking(false);
+function initFinderControls() {
+  const seg = $("#baseSeg");
+  seg.innerHTML = state.bases.map((b) =>
+    `<button type="button" data-base="${esc(b.base_name)}" class="${b.base_name === state.base ? "on" : ""}">${esc(b.base_name)}</button>`).join("");
+  $$("#baseSeg button").forEach((x) => x.addEventListener("click", () => setBase(x.dataset.base, true)));
+  $$("#presetChips .chipb").forEach((chip) => chip.addEventListener("click", () => {
+    $$("#presetChips .chipb").forEach((c) => c.classList.toggle("active", c === chip));
+    state.preset = chip.dataset.preset;
+    state.weights = null;
+    buildSliders(PRESET_WEIGHTS[state.preset]);
+    addLog("mission", `${PRESET_LABELS[state.preset]} preset applied — 14 sites re-ranked for ${state.base}`);
+    loadRanking();
   }));
   buildSliders(PRESET_WEIGHTS.balanced);
-  initMap();
-  loadRanking(false);
 }
 
-let _lastRanking = null;
-async function lastRanking() { return _lastRanking; }
-
-function initMap() {
-  const box = $("#finderMap");
-  if (typeof L === "undefined") { box.innerHTML = `<p class="loading">Map library unavailable offline — the ranking table below carries the same data.</p>`; return; }
-  state.finder.map = L.map("finderMap", { worldCopyJump: true }).setView([18, 10], 2);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-    { attribution: "© OpenStreetMap contributors", maxZoom: 10 }).addTo(state.finder.map);
-  state.finder.layer = L.layerGroup().addTo(state.finder.map);
-}
-
-async function loadRanking(customWeights) {
-  const base = state.finder.base || $("#finderBase").value;
-  const params = new URLSearchParams({ base, preset: state.finder.preset });
-  if (customWeights && state.finder.weights) {
-    for (const k of Object.keys(PILLAR_LABELS)) params.set(k, state.finder.weights[k]);
-  }
-  try {
-    const data = await api(`/api/rankings?${params}`);
-    _lastRanking = data;
-    renderRanking(data);
-    refreshMap(data);
-  } catch (err) {
-    $("#rankingTable tbody").innerHTML = `<tr><td colspan="9">Failed to load (${esc(err.message)})</td></tr>`;
-  }
-}
-
-function renderRanking(data) {
-  const banner = $("#customBanner");
-  if (data.official) { banner.classList.add("hidden"); }
-  else {
-    banner.classList.remove("hidden");
-    banner.textContent = `Custom ranking — weights: ` + Object.keys(PILLAR_LABELS)
-      .map((k) => `${PILLAR_LABELS[k]} ${data.weights[k]}`).join(" · ") +
-      `. The official published ranking uses the Balanced profile.`;
-  }
-  const soil = (r) => (r.sand_pct === null) ? "no data" :
-    `${fmt(r.sand_pct, 0)}/${fmt(r.clay_pct, 0)}/${fmt(r.coarse_fragments_pct, 0)}`;
-  $("#rankingTable tbody").innerHTML = data.results.map((r) => `
-    <tr class="${r.display_rank === 1 ? "rank1" : ""}">
-      <td><b>${r.display_rank}</b></td>
-      <td><b>${esc(r.earth_site)}</b><br><small style="color:var(--muted)">${esc(r.country)}</small></td>
-      <td>${esc(r.terrain_type)}<br><small style="color:var(--muted)">${esc(r.regime || "")}</small></td>
-      <td><span class="score-pill">${fmt(r.display_score)}</span></td>
-      <td>${fmt(r.slope_mean_deg, 2)}</td><td>${fmt(r.pct_slope_under_10deg)}</td>
-      <td>${fmt(r.temp_mean_c)}</td><td>${fmt(r.temp_seasonal_range_c)}</td><td>${soil(r)}</td>
-    </tr>`).join("");
-  $("#rankCards").innerHTML = data.results.map((r) => `
-    <div class="rank-card">
-      <header><h4>#${r.display_rank} ${esc(r.earth_site)}</h4><span class="rc-score">${fmt(r.display_score)}</span></header>
-      <div class="rc-meta">${esc(r.country)} · ${esc(r.terrain_type)} · slope ${fmt(r.slope_mean_deg, 2)}° ·
-      flat ${fmt(r.pct_slope_under_10deg)}% · temp ${fmt(r.temp_mean_c)} °C · seasonal ±${fmt(r.temp_seasonal_range_c)} °C</div>
-    </div>`).join("");
-  const notes = Object.fromEntries(state.sites.map((s) => [s.site_name, s]));
-  $("#discoveryNotes").innerHTML = data.results.map((r) => {
-    const s = notes[r.earth_site];
-    return s ? `<p><b>#${r.display_rank} ${esc(r.earth_site)}</b> (${esc(s.country)}) — ${esc(s.analog_note || "")}</p>` : "";
-  }).join("");
-}
-
-function refreshMap(data) {
-  if (!state.finder.map || !data) return;
-  state.finder.layer.clearLayers();
-  data.results.forEach((r) => {
-    const color = r.display_rank === 1 ? "#3ddc97" : r.display_rank <= 3 ? "#39c2ff" : "#8fa5cc";
-    L.circleMarker([r.lat, r.lon], { radius: 8, color, weight: 2, fillColor: color, fillOpacity: 0.75 })
-      .bindPopup(`<b>${esc(r.earth_site)}</b> (${esc(r.country)})<br>${esc(r.site_type || r.terrain_type)}<br>` +
-                 `Analog Score: <b>${fmt(r.display_score)}</b><br>Slope: ${fmt(r.slope_mean_deg, 2)}° · Temp: ${fmt(r.temp_mean_c)} °C`)
-      .addTo(state.finder.layer);
-  });
-}
-
-/* ---------------------------------------------------------------- compare */
+/* ------------------------------------------------------------------ compare */
 async function initCompare() {
-  if (state.compareLoaded) return;
+  if (state.compareLoaded || !state.bases.length) return;
   state.compareLoaded = true;
   $("#cmpBase").innerHTML = state.bases.map((b) => `<option>${esc(b.base_name)}</option>`).join("");
-  if (!state.sites.length) state.sites = await api("/api/earth-sites");
   $("#cmpSite").innerHTML = state.sites.map((s) => `<option>${esc(s.site_name)}</option>`).join("");
   const top = state.winners.find((w) => w.moon_base === $("#cmpBase").value);
   if (top) $("#cmpSite").value = top.earth_site;
@@ -250,15 +405,14 @@ async function initCompare() {
   $("#cmpSite").addEventListener("change", loadCompare);
   loadCompare();
 }
-
 async function loadCompare() {
   const base = $("#cmpBase").value, site = $("#cmpSite").value;
   try {
     const d = await api(`/api/compare?base=${encodeURIComponent(base)}&site=${encodeURIComponent(site)}`);
     $("#compareHead").innerHTML =
-      `<span class="big-score">${fmt(d.analog_score)}</span>
+      `<span class="big">${fmt(d.analog_score)}</span>
        <span><b>${esc(site)}</b> for <b>${esc(base)}</b><br>
-       <span style="color:var(--muted)">Rank #${d.rank_for_base} of ${d.of_sites} novel sites (official weights)</span></span>`;
+       <span style="color:var(--mut);font-size:.8rem">Rank #${d.rank_for_base} of ${d.of_sites} novel sites · official weights</span></span>`;
     $("#cmpBaseName").textContent = base;
     $("#cmpSiteName").textContent = site;
     const rows = [
@@ -270,14 +424,13 @@ async function loadCompare() {
     ];
     $("#compareTable tbody").innerHTML = rows.map(([l, m, e, dec]) =>
       `<tr><td>${l}</td><td><b>${fmt(m, dec)}</b></td><td><b>${fmt(e, dec)}</b></td></tr>`).join("") +
-      (d.earth.analog_note ? `<tr><td colspan="3" style="white-space:normal;color:var(--muted)">
-        <b style="color:var(--text)">Why this site is new:</b> ${esc(d.earth.analog_note)}</td></tr>` : "");
+      (d.earth.analog_note ? `<tr><td colspan="3" style="white-space:normal;color:var(--mut)">
+        <b style="color:var(--txt)">Why this site is new:</b> ${esc(d.earth.analog_note)}</td></tr>` : "");
     drawRadar(d);
   } catch (err) {
     $("#compareHead").innerHTML = `<p class="loading">Failed to load (${esc(err.message)})</p>`;
   }
 }
-
 function drawRadar(d) {
   const keys = ["slope", "flat", "temperature", "relief", "soil"];
   const labels = ["Slope", "Flat area", "Temperature", "Relief", "Soil proxy"];
@@ -289,32 +442,32 @@ function drawRadar(d) {
   let svg = `<svg viewBox="0 0 340 320" role="img" aria-label="Radar chart of per-factor similarity">`;
   [0.25, 0.5, 0.75, 1].forEach((ring) => {
     const pts = keys.map((_, i) => pt(i, ring).join(",")).join(" ");
-    svg += `<polygon points="${pts}" fill="none" stroke="#22345f" stroke-width="1"/>`;
+    svg += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1"/>`;
   });
   keys.forEach((_, i) => {
     const [x, y] = pt(i, 1);
-    svg += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#22345f"/>`;
+    svg += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.13)"/>`;
   });
   const vals = keys.map((k) => (d.radar_similarity[k] === null ? 0.5 : d.radar_similarity[k]));
   const poly = vals.map((v, i) => pt(i, v).join(",")).join(" ");
-  svg += `<polygon points="${poly}" fill="rgba(160,107,255,.28)" stroke="#a06bff" stroke-width="2"/>`;
+  svg += `<polygon points="${poly}" fill="rgba(255,122,26,.22)" stroke="#ff7a1a" stroke-width="2"/>`;
   vals.forEach((v, i) => {
     const [x, y] = pt(i, v);
     const neutral = d.radar_similarity[keys[i]] === null;
-    svg += `<circle cx="${x}" cy="${y}" r="4" fill="${neutral ? "#070d1f" : "#39c2ff"}" stroke="#39c2ff" stroke-width="2"/>`;
+    svg += `<circle cx="${x}" cy="${y}" r="4" fill="${neutral ? "#0d1218" : "#4fe3c1"}" stroke="#4fe3c1" stroke-width="2"/>`;
   });
   labels.forEach((lab, i) => {
     const [x, y] = pt(i, 1.18);
-    svg += `<text x="${x}" y="${y}" fill="#9db1d8" font-size="12" font-weight="600" text-anchor="middle">${lab}</text>`;
+    svg += `<text x="${x}" y="${y}" fill="#98a3ad" font-size="12" font-weight="600" text-anchor="middle">${lab}</text>`;
   });
   svg += `</svg>`;
   const missing = keys.filter((k) => d.radar_similarity[k] === null);
-  $("#radarBox").innerHTML = `<h3 style="margin-top:.2rem">Per-factor similarity — ${esc(d.base)} vs ${esc(d.site)}</h3>` +
+  $("#radarBox").innerHTML = `<h3>Per-factor similarity — ${esc(d.base)} vs ${esc(d.site)}</h3>` +
     svg + `<p class="radar-note">1 = identical on that factor.${missing.length ?
       ` Hollow marker: ${missing.map((k) => PILLAR_LABELS[k]).join(", ")} not scored for this site (no data coverage), drawn neutral.` : ""}</p>`;
 }
 
-/* ------------------------------------------------------------------- mars */
+/* ---------------------------------------------------------------------- mars */
 async function initMars() {
   if (state.marsLoaded) return;
   state.marsLoaded = true;
@@ -322,8 +475,8 @@ async function initMars() {
     const d = await api("/api/mars");
     const r = d.region;
     $("#marsBox").innerHTML = `
-      <div class="card" style="margin-bottom:1rem">
-        <h3 style="margin-top:.2rem">${esc(r.mars_region)} <small style="color:var(--muted)">${fmt(r.lat, 2)}° N, ${fmt(r.lon, 2)}° E</small></h3>
+      <div class="mcard">
+        <h3>${esc(r.mars_region)} <small>${fmt(r.lat, 2)}° N, ${fmt(r.lon, 2)}° E</small></h3>
         <div class="metric-line"><span>Mean elevation</span><b>${fmt(r.elev_mean_m)} m</b></div>
         <div class="metric-line"><span>Relief — elevation std</span><b>${fmt(r.elev_std_m)} m</b></div>
         <div class="metric-line"><span>Mean slope</span><b>${fmt(r.slope_mean_deg, 2)}°</b></div>
@@ -331,10 +484,10 @@ async function initMars() {
         <div class="metric-line"><span>Area flatter than 10°</span><b>${fmt(r.pct_slope_under_10deg)}%</b></div>
         <p class="sources">Source: ${esc(r.source)}</p>
       </div>
-      <h3>Which Earth sites move most like Jezero? (closest mean slope)</h3>
-      <div class="card-grid">${d.closest_earth_sites.map((s) => `
-        <div class="card"><h3 style="margin:.1rem 0">${esc(s.site_name)}</h3>
-          <div class="rc-meta" style="color:var(--muted)">${esc(s.country)}</div>
+      <h3 style="margin:16px 0 4px;font-size:15px">Which Earth sites move most like Jezero? (closest mean slope)</h3>
+      <div class="mars-grid">${d.closest_earth_sites.map((s) => `
+        <div class="mcard"><h3>${esc(s.site_name)}</h3>
+          <div class="sources" style="margin:0 0 4px">${esc(s.country)}</div>
           <div class="metric-line"><span>Mean slope</span><b>${fmt(s.slope_mean_deg, 2)}°</b></div>
           <div class="metric-line"><span>Area flatter than 10°</span><b>${fmt(s.pct_slope_under_10deg)}%</b></div>
         </div>`).join("")}</div>`;
@@ -343,7 +496,7 @@ async function initMars() {
   }
 }
 
-/* ------------------------------------------------------------- methodology */
+/* --------------------------------------------------------------- methodology */
 async function initMethodology() {
   if (state.methodologyLoaded) return;
   state.methodologyLoaded = true;
@@ -355,6 +508,33 @@ async function initMethodology() {
   }
 }
 
-/* ------------------------------------------------------------------- boot */
-loadOverview().then(route);
-route();
+/* ---------------------------------------------------------------------- boot */
+async function boot() {
+  initMap();
+  try {
+    const [health, bases, sites, winners] = await Promise.all([
+      api("/api/health"), api("/api/moon-bases"), api("/api/earth-sites"), api("/api/winners"),
+    ]);
+    state.health = health; state.bases = bases; state.sites = sites; state.winners = winners;
+    $("#topScored").textContent = `${health.score_rows}/${bases.length * sites.length}`;
+    $("#topBase").innerHTML = bases.map((b) => `<option>${esc(b.base_name)}</option>`).join("");
+    $("#topBase").value = state.base;
+    $("#topBase").addEventListener("change", (e) => setBase(e.target.value, true));
+    renderBaseCards();
+    renderSelectedBase();
+    renderHealth();
+    renderBaseProfiles();
+    initFinderControls();
+    addLog("info", `Pipeline outputs synced — ${health.score_rows}/${bases.length * sites.length} pair scores live`);
+    addLog("info", "Diviner PCP polar temperature tables loaded (pols + poln)");
+    sites.filter((s) => s.sand_pct === null || s.sand_pct === undefined)
+      .forEach((s) => addLog("alert", `SoilGrids gap — ${s.site_name}: soil pillar not scored for this site`));
+    addLog("mission", `Console initialised — target base ${state.base}`);
+    loadRanking();
+  } catch (err) {
+    $("#consoleRanking").innerHTML = `<p class="loading">Could not load data (${esc(err.message)}). Is the backend running?</p>`;
+    addLog("alert", "Backend unreachable — check /api/health");
+  }
+  route();
+}
+boot();

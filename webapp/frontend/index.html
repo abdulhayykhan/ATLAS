@@ -3,178 +3,261 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ATLAS — Lunar Analog Finder | Team Binary Knights</title>
-<meta name="description" content="ATLAS discovers NEW Earth locations that analog the Moon's permanent base sites and Mars — measured from NASA LRO, Copernicus, NASA POWER and SoilGrids data.">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<title>ATLAS — Lunar Analog Survey Console | Team Binary Knights</title>
+<meta name="description" content="ATLAS mission console: four Moon base sites measured from NASA LRO data, 14 newly discovered Earth analog sites ranked live. Team Binary Knights, NASA Space Apps Challenge 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="styles.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌕</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='%2304070a'/><circle cx='16' cy='16' r='13' fill='none' stroke='%23ff7a1a' stroke-width='2'/><circle cx='16' cy='16' r='4' fill='%234fe3c1'/></svg>">
 </head>
 <body>
-<header class="site-header">
-  <a class="brand" href="#overview" data-nav="overview">
-    <span class="brand-moon">🌕</span>
-    <span class="brand-text">ATLAS<small>Analog Terrain &amp; Lunar Alignment System</small></span>
-  </a>
-  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">☰</button>
-  <nav class="main-nav" id="mainNav">
-    <a href="#overview" data-nav="overview" class="active">Overview</a>
-    <a href="#bases" data-nav="bases">Moon Bases</a>
-    <a href="#finder" data-nav="finder">Analog Finder</a>
-    <a href="#compare" data-nav="compare">Compare</a>
-    <a href="#mars" data-nav="mars">Mars</a>
-    <a href="#methodology" data-nav="methodology">Methodology</a>
-  </nav>
-</header>
 
-<main>
-  <!-- ============================ OVERVIEW ============================ -->
-  <section id="page-overview" class="page active">
-    <div class="hero">
-      <h1>Which places on Earth are most like the Moon's future base sites?</h1>
-      <p class="hero-sub">NASA plans permanent bases at four lunar polar craters — <strong>Peary, Shackleton,
-      de Gerlache and Amundsen</strong>. Before hardware and crews go there, they must be tested somewhere on
-      Earth that behaves the same way. Following Challenge Guide #09, ATLAS is a <strong>discovery engine for
-      NEW analog sites</strong>: the world-famous analogs are deliberately excluded, and 14 lesser-known
-      extreme places are measured and ranked against the bases instead.</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" href="#finder" data-nav="finder">Find analogs →</a>
-        <a class="btn btn-ghost" href="#methodology" data-nav="methodology">How it works</a>
+<div class="shell">
+  <!-- ======================= LEFT RAIL ======================= -->
+  <aside class="rail" aria-label="Primary">
+    <a class="rail-logo" href="#overview" data-nav="overview" title="ATLAS console">A<span>·</span></a>
+    <nav class="rail-nav">
+      <a class="ritem active" href="#overview" data-nav="overview">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/></svg><span>Overview</span></a>
+      <a class="ritem" href="#bases" data-nav="bases">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="9" r="2.2"/></svg><span>Bases</span></a>
+      <a class="ritem" href="#finder" data-nav="finder">
+        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><line x1="15" y1="15" x2="20" y2="20"/></svg><span>Finder</span></a>
+      <a class="ritem" href="#compare" data-nav="compare">
+        <svg viewBox="0 0 24 24"><path d="M12 4 L21 20 L3 20 Z"/></svg><span>Compare</span></a>
+      <a class="ritem" href="#mars" data-nav="mars">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" class="mars-o"/></svg><span>Mars</span></a>
+      <a class="ritem" href="#methodology" data-nav="methodology">
+        <svg viewBox="0 0 24 24"><line x1="5" y1="7" x2="19" y2="7"/><line x1="5" y1="12" x2="19" y2="12"/><line x1="5" y1="17" x2="13" y2="17"/></svg><span>Method</span></a>
+    </nav>
+    <a class="ritem rail-foot" href="#finder" id="railData">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="8.5"/></svg><span>Data</span></a>
+  </aside>
+
+  <div class="maincol">
+    <!-- ======================= TOP TELEMETRY BAR ======================= -->
+    <header class="topbar">
+      <div class="cell cell-mission"><span class="k">Mission</span><span class="v">LUNAR ANALOG SURVEY</span></div>
+      <div class="cell"><span class="k">Base</span>
+        <select id="topBase" class="top-select" aria-label="Selected Moon base"></select>
       </div>
-      <div class="stat-strip">
-        <div class="stat"><span class="stat-num">4</span><span class="stat-label">Moon bases measured</span></div>
-        <div class="stat"><span class="stat-num">14</span><span class="stat-label">NEW Earth sites</span></div>
-        <div class="stat"><span class="stat-num">6</span><span class="stat-label">terrain types</span></div>
-        <div class="stat"><span class="stat-num">5</span><span class="stat-label">open repositories</span></div>
-        <div class="stat"><span class="stat-num">56</span><span class="stat-label">ranked matches</span></div>
+      <div class="cell cell-phase"><span class="k">Phase</span><span class="v" id="topPhase">CONSOLE</span></div>
+      <div class="cell cell-preset"><span class="k">Preset</span><span class="v" id="topPreset">BALANCED</span></div>
+      <div class="top-right">
+        <div class="tcell"><span class="k">Sites scored</span><span class="v mono" id="topScored">—/—</span></div>
+        <div class="tcell"><span class="k">Session</span><span class="v mono" id="topTimer">00:00:00</span></div>
+        <div class="tcell live-cell"><span class="live-dot"></span><span class="v">LIVE</span></div>
       </div>
-    </div>
+    </header>
 
-    <h2 class="section-title">The four bases — measured, not guessed</h2>
-    <div class="card-grid" id="baseChips"><p class="loading">Loading base data…</p></div>
-
-    <h2 class="section-title">🏆 Top NEW match for each base</h2>
-    <div class="card-grid" id="winnerCards"><p class="loading">Loading winners…</p></div>
-
-    <div class="note-box">
-      <strong>How validation worked:</strong> before discovering anything, the engine was run on the classic
-      catalogued analogs — untuned, it ranked McMurdo Dry Valleys #1 for three bases and Atacama #1 for Peary,
-      the literature's own answers. Those sites were then <em>removed</em> and the 14 new sites ranked.
-      Full story on the Methodology page.
-    </div>
-  </section>
-
-  <!-- ============================ MOON BASES ============================ -->
-  <section id="page-bases" class="page">
-    <h2 class="section-title">The four Moon bases</h2>
-    <p class="section-sub">Every value below was measured from NASA LRO data — LOLA topography, LPSR shadow
-    masks, PGDA-69 illumination models and Diviner temperatures, for <strong>both</strong> lunar poles.</p>
-    <div id="baseProfiles"><p class="loading">Loading…</p></div>
-  </section>
-
-  <!-- ============================ FINDER ============================ -->
-  <section id="page-finder" class="page">
-    <h2 class="section-title">Earth Analog Finder</h2>
-    <p class="section-sub">14 newly-discovered candidate sites, ranked per Moon base. The classic,
-    already-catalogued analogs (Atacama, Mauna Kea, Haughton, Rio Tinto, McMurdo, Meteor Crater, Iceland,
-    Svalbard) are excluded on purpose, per Challenge Guide #09.</p>
-
-    <div class="controls-card">
-      <div class="control-row">
-        <label class="control">
-          <span>Moon base</span>
-          <select id="finderBase"></select>
-        </label>
-        <div class="control grow">
-          <span>Mission profile — re-weights the score live</span>
-          <div class="chips" id="presetChips">
-            <button class="chip active" data-preset="balanced">Balanced</button>
-            <button class="chip" data-preset="rover">🚗 Rover mobility</button>
-            <button class="chip" data-preset="habitat">🏠 Habitat &amp; structures</button>
-            <button class="chip" data-preset="isru">🔬 Science &amp; ISRU</button>
-          </div>
+    <!-- ======================= STAGE (MAP + VIEWS) ======================= -->
+    <main class="stage" id="stage">
+      <div id="map" aria-label="World map of analog sites"></div>
+      <div class="map-fallback" id="mapFallback" hidden>
+        <p>Map tiles unavailable — all data remains in the panels.</p>
+      </div>
+      <div class="map-tools">
+        <div class="toggle" role="group" aria-label="Map style">
+          <button type="button" class="on" id="tglMap">MAP</button>
+          <button type="button" id="tglGlobe">GLOBE</button>
+        </div>
+        <div class="zoomctl">
+          <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
+          <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
         </div>
       </div>
-      <details class="weights-box">
-        <summary>Fine-tune the weights</summary>
-        <div class="sliders" id="weightSliders"></div>
-      </details>
-      <p class="custom-banner hidden" id="customBanner"></p>
-    </div>
+      <div class="compass mono" aria-hidden="true">N ↑</div>
 
-    <div id="finderMap" class="map-box"></div>
-    <div class="table-wrap">
-      <table class="data-table" id="rankingTable">
-        <thead><tr>
-          <th>#</th><th>Site</th><th>Terrain</th><th>Score</th><th>Slope °</th>
-          <th>Flat &lt;10° %</th><th>Temp °C</th><th>Seasonal °C</th><th>Sand/Clay/CF %</th>
-        </tr></thead>
-        <tbody><tr><td colspan="9" class="loading">Loading rankings…</td></tr></tbody>
-      </table>
-    </div>
-    <div class="rank-cards" id="rankCards"></div>
+      <!-- ============ VIEW: CONSOLE / OVERVIEW ============ -->
+      <section class="view view-console active" id="page-overview">
+        <div class="console-grid">
+          <div class="leftcol">
+            <div class="glass panel" id="selBasePanel">
+              <div class="phead"><span class="ptitle">Selected Base</span><span class="chip" id="selBaseChip">—</span></div>
+              <div class="sel-name" id="selBaseName">Loading…</div>
+              <div class="sel-coords mono" id="selBaseCoords"></div>
+              <div class="sel-grid" id="selBaseStats"></div>
+              <p class="panel-note" id="selBaseNote"></p>
+            </div>
 
-    <details class="notes-box">
-      <summary>Why each site is a NEW analog — discovery notes</summary>
-      <div id="discoveryNotes"></div>
-    </details>
+            <div class="glass panel">
+              <div class="phead"><span class="ptitle" id="rankPanelTitle">Analog Ranking</span>
+                <a class="pctl" href="#finder" data-nav="finder">All 14 sites ›</a></div>
+              <div id="consoleRanking"><p class="loading">Acquiring ranking…</p></div>
+            </div>
 
-    <div class="download-row">
-      <a class="btn btn-ghost" href="/api/downloads/scores" download>⬇ Full ranking (CSV)</a>
-      <a class="btn btn-ghost" href="/api/downloads/earth" download>⬇ Earth profiles (CSV)</a>
-      <a class="btn btn-ghost" href="/api/downloads/moon" download>⬇ Moon profiles (CSV)</a>
-    </div>
-  </section>
+            <div class="glass panel">
+              <div class="phead"><span class="ptitle">Model Health</span>
+                <a class="pctl" href="#methodology" data-nav="methodology">Method ›</a></div>
+              <div class="health" id="modelHealth"></div>
+              <p class="panel-note">Pillar coverage across the 14 sites. A pillar below 10/10 means
+              some sites have no source coverage — those sites are never scored on it.</p>
+            </div>
 
-  <!-- ============================ COMPARE ============================ -->
-  <section id="page-compare" class="page">
-    <h2 class="section-title">Head-to-head comparison</h2>
-    <div class="controls-card">
-      <div class="control-row">
-        <label class="control"><span>Moon base</span><select id="cmpBase"></select></label>
-        <label class="control"><span>Earth site</span><select id="cmpSite"></select></label>
-      </div>
-    </div>
-    <div class="compare-head" id="compareHead"></div>
-    <div class="compare-grid">
-      <div class="compare-radar card" id="radarBox"></div>
-      <div class="table-wrap card">
-        <table class="data-table" id="compareTable">
-          <thead><tr><th>Measure</th><th id="cmpBaseName">Moon base</th><th id="cmpSiteName">Earth site</th></tr></thead>
-          <tbody></tbody>
-        </table>
-        <p class="fineprint">Sun visibility and Earth visibility are deliberately not scored — Earth has no
-        counterpart for them. They are mission context on the Moon Bases page. A soil bar drawn at half height
-        means the pillar was not scored for that site (no SoilGrids coverage) — missing data is never scored as zero.</p>
-      </div>
-    </div>
-  </section>
+            <div class="glass panel">
+              <div class="phead"><span class="ptitle">Mission Log</span>
+                <div class="logtabs" id="logTabs">
+                  <button type="button" class="ltab on" data-logtab="all">ALL</button>
+                  <button type="button" class="ltab" data-logtab="alert">ALERTS<span class="bdg" id="alertCount">0</span></button>
+                  <button type="button" class="ltab" data-logtab="info">INFO</button>
+                </div>
+              </div>
+              <div id="missionLog"></div>
+            </div>
+          </div>
 
-  <!-- ============================ MARS ============================ -->
-  <section id="page-mars" class="page">
-    <h2 class="section-title">And Mars?</h2>
-    <p class="section-sub">The same terrain method runs on Mars data. Jezero Crater (Perseverance's home) was
-    measured from NASA's MOLA instrument exactly the way the Moon bases were measured — fetched as a ~3 MB
-    window of the PDS MEGDR tile by HTTP range requests, not a bulk download.</p>
-    <div id="marsBox"><p class="loading">Loading…</p></div>
-    <div class="note-box">Extending ATLAS to a full Mars ranking (more regions, THEMIS temperature) is the
-    roadmap item after this challenge — labelled as future work, not hidden.</div>
-  </section>
+          <div class="feed glass" id="feedPanel">
+            <div class="feed-head">
+              <span class="ptitle light" id="feedTitle">Site Feed</span>
+              <span class="chip">TARGET LOCK</span>
+            </div>
+            <div class="viewport">
+              <img id="feedImg" alt="Shaded relief of the selected Moon base">
+              <div class="tape mono" id="tapeSlope"></div>
+              <div class="tape mono right" id="tapeTemp"></div>
+              <div class="reticle" aria-hidden="true">
+                <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="17"/><circle cx="26" cy="26" r="2.4" class="fill"/><line x1="26" y1="2" x2="26" y2="12"/><line x1="26" y1="40" x2="26" y2="50"/></svg>
+              </div>
+              <div class="feed-score">
+                <div class="mono fs-k">Analog score</div>
+                <div class="fs-v" id="feedScore">—</div>
+                <div class="fs-site" id="feedSite"></div>
+              </div>
+              <div class="feed-cap mono" id="feedCap"></div>
+            </div>
+            <div class="feed-foot mono" id="feedFoot"></div>
+          </div>
 
-  <!-- ============================ METHODOLOGY ============================ -->
-  <section id="page-methodology" class="page">
-    <h2 class="section-title">Methodology &amp; Sources</h2>
-    <article class="markdown-body" id="methodologyBody"><p class="loading">Loading methodology…</p></article>
-  </section>
-</main>
+          <div class="legend mono" aria-hidden="true">
+            <span><i class="lg-dot"></i>Moon base</span>
+            <span><i class="lg-ring o"></i>Best match</span>
+            <span><i class="lg-ring t"></i>Runner-up</span>
+            <span><i class="lg-line"></i>Rank path</span>
+          </div>
 
-<footer class="site-footer">
-  <p><strong>ATLAS</strong> — Analog Terrain &amp; Lunar Alignment System · Team <strong>Binary Knights</strong> ·
-  NASA Space Apps Challenge 2026</p>
-  <p class="fineprint">Data: NASA PDS (LOLA, LPSR, Diviner, MOLA) · NASA PGDA · Copernicus DEM GLO-30 © ESA ·
-  NASA POWER · SoilGrids 2.0 © ISRIC (CC BY 4.0). Scores are within-pool rankings under the published formula.</p>
-</footer>
+          <div class="basecards" id="baseCards"></div>
+        </div>
+      </section>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <!-- ============ VIEW: MOON BASES ============ -->
+      <section class="view" id="page-bases">
+        <div class="workspace glass">
+          <div class="ws-head">
+            <div><div class="mono ws-k">LRO LOLA · LPSR · PGDA-69 · DIVINER</div>
+            <h2>The four Moon bases — measured, not guessed</h2></div>
+            <p class="ws-sub">Both lunar poles are processed. The north-pole grids are stored with the
+            opposite row handedness to the south — the mapping was validated against named craters at both poles.</p>
+          </div>
+          <div id="baseProfiles"><p class="loading">Loading base data…</p></div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: FINDER ============ -->
+      <section class="view" id="page-finder">
+        <div class="workspace glass">
+          <div class="ws-head">
+            <div><div class="mono ws-k">Discovery run · Guide #09</div>
+            <h2>Earth Analog Finder</h2></div>
+            <p class="ws-sub">14 newly discovered candidate sites. The classic catalogued analogs
+            (Atacama, Mauna Kea, Haughton, Rio Tinto, McMurdo, Meteor Crater, Iceland, Svalbard) are
+            excluded on purpose — they served only as the validation control.</p>
+          </div>
+
+          <div class="controls">
+            <div class="ctl-block">
+              <span class="ctl-label">Moon base</span>
+              <div class="seg" id="baseSeg"></div>
+            </div>
+            <div class="ctl-block grow">
+              <span class="ctl-label">Mission profile — re-weights the score live</span>
+              <div class="chips" id="presetChips">
+                <button type="button" class="chipb active" data-preset="balanced">Balanced</button>
+                <button type="button" class="chipb" data-preset="rover">Rover mobility</button>
+                <button type="button" class="chipb" data-preset="habitat">Habitat &amp; structures</button>
+                <button type="button" class="chipb" data-preset="isru">Science &amp; ISRU</button>
+              </div>
+            </div>
+          </div>
+          <details class="weights-box">
+            <summary>Fine-tune the weights</summary>
+            <div class="sliders" id="weightSliders"></div>
+          </details>
+          <p class="custom-banner" id="customBanner" hidden></p>
+
+          <div class="ranklist" id="rankList"><p class="loading">Loading rankings…</p></div>
+
+          <div class="download-row" id="downloads">
+            <span class="ctl-label">Downloads</span>
+            <a class="dbtn" href="/api/downloads/scores" download>Full ranking CSV</a>
+            <a class="dbtn" href="/api/downloads/earth" download>Earth profiles CSV</a>
+            <a class="dbtn" href="/api/downloads/moon" download>Moon profiles CSV</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: COMPARE ============ -->
+      <section class="view" id="page-compare">
+        <div class="workspace glass">
+          <div class="ws-head">
+            <div><div class="mono ws-k">Head-to-head</div><h2>Compare base vs site</h2></div>
+            <p class="ws-sub">Per-factor similarity: 1 = identical. A hollow marker means the factor was
+            not scored for that site (no source coverage) — missing data is never scored as zero.</p>
+          </div>
+          <div class="controls">
+            <label class="ctl-block"><span class="ctl-label">Moon base</span>
+              <select id="cmpBase" class="dark-select"></select></label>
+            <label class="ctl-block"><span class="ctl-label">Earth site</span>
+              <select id="cmpSite" class="dark-select"></select></label>
+            <div class="cmp-score" id="compareHead"></div>
+          </div>
+          <div class="compare-grid">
+            <div class="radar-box" id="radarBox"></div>
+            <div>
+              <table class="ctable" id="compareTable">
+                <thead><tr><th>Measure</th><th id="cmpBaseName">Moon base</th><th id="cmpSiteName">Earth site</th></tr></thead>
+                <tbody></tbody>
+              </table>
+              <p class="panel-note">Sun visibility and Earth visibility are deliberately not scored —
+              Earth has no counterpart for them. They are mission context on the Bases page.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: MARS ============ -->
+      <section class="view" id="page-mars">
+        <div class="workspace glass">
+          <div class="ws-head">
+            <div><div class="mono ws-k">Extension · MGS MOLA</div><h2>And Mars?</h2></div>
+            <p class="ws-sub">The same terrain method runs on Mars. Jezero Crater was measured from the
+            MOLA MEGDR tile with a ~3 MB HTTP-range window — no bulk download.</p>
+          </div>
+          <div id="marsBox"><p class="loading">Loading Mars data…</p></div>
+          <p class="panel-note">Extending ATLAS to a full Mars ranking (more regions, THEMIS temperature)
+          is the stated roadmap — labelled as future work, not hidden.</p>
+        </div>
+      </section>
+
+      <!-- ============ VIEW: METHODOLOGY ============ -->
+      <section class="view" id="page-methodology">
+        <div class="workspace glass">
+          <div class="ws-head">
+            <div><div class="mono ws-k">Formula · weights · limitations</div>
+            <h2>Methodology &amp; Sources</h2></div>
+            <p class="ws-sub">ATLAS — Analog Terrain &amp; Lunar Alignment System · Team Binary Knights ·
+            NASA Space Apps Challenge 2026. Data: NASA PDS &amp; PGDA · Copernicus DEM GLO-30 · NASA POWER · SoilGrids 2.0.</p>
+          </div>
+          <article class="markdown-body" id="methodologyBody"><p class="loading">Loading methodology…</p></article>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="vendor/leaflet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

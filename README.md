@@ -33,8 +33,14 @@ bash webapp/run.sh        # http://localhost:8000 — API + responsive web UI
 The `webapp/` folder contains a FastAPI backend (`webapp/backend/`, JSON API over the
 pipeline outputs, including live mission re-weighting) and a framework-free
 HTML/CSS/JS frontend (`webapp/frontend/`) that is fully responsive from phones to
-desktops. It reads only `outputs/` — no raw data needed at runtime. Details:
-`docs/11_fullstack_webapp.md`. The Streamlit app below remains available too.
+desktops. The frontend is a **mission-control console**: the world map is the canvas,
+with glass telemetry panels floating over it — selected-base panel, live analog
+ranking, model-health coverage, a mission log (data-gap alerts included), a site
+feed with HUD tapes over the base's real LOLA hillshade, and one workspace view per
+tool (Bases / Finder / Compare / Mars / Methodology). Leaflet is vendored locally,
+so the map works even where a CDN does not. It reads only `outputs/` — no raw data
+needed at runtime. Details: `docs/11_fullstack_webapp.md`. The Streamlit app below
+remains available too.
 
 **Deploy on Vercel (zero configuration):** the repo root `pyproject.toml` declares the
 web app's light runtime dependencies (FastAPI + Markdown only — the backend reads the
