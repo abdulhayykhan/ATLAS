@@ -1,3 +1,7 @@
+# Local data tree — created by scripts/download_data.sh, never committed.
+# (The pipeline reads the .lbl labels that ship with each PDS product there.)
+data/
+
 # Raw geospatial & planetary datasets (>100 MB GitHub limit)
 *.hdf
 *.tif

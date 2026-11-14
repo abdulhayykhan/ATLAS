@@ -17,7 +17,10 @@
 | `ead7a59` | Guide-#09 discovery run: 14 novel sites, classics excluded, presets, clustering |
 | `e5ee866` | Documentation set docs/00–10 + DOCUMENTATION.md index |
 | `54cba0b` | Full-stack web app: FastAPI backend + responsive vanilla frontend |
-| *(this update)* | README fix (14 sites), docs/12 deployment & submission guide |
+| `79e9b24` | Documentation update: docs/12 deployment & submission guide, README fixes |
+| *(cleanup)* | Removed the init commit's `data/moon/` label & saved-web-page downloads (11 files) |
+
+- **Cleanup note (14 Nov 2026):** the initial commit had committed a partial set of PDS label files and saved Lunar ODE web pages under `data/moon/`. They were removed from the repository: the set was south-pole only (the pipeline uses both poles), two labels described products the project does not use, and every label in any case travels with its PDS product download. `.gitignore` now excludes the whole local `data/` tree, which `scripts/download_data.sh` recreates on any machine. Nothing in `src/` or `webapp/` reads the committed copies — both apps run from `outputs/` alone.
 
 - The raw rasters (~2.3 GB) are **not** in the repo by design — `.gitignore` excludes `data/`. Anyone can rebuild them with `scripts/download_data.sh` (see `09_reproduction_guide.md`). The apps need only the committed `outputs/` folder (~5 MB).
 

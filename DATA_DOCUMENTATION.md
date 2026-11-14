@@ -62,6 +62,8 @@ ATLAS/
 
 ## 3. Lunar Baseline Datasets (`data/moon/`)
 
+> **Repository note:** no data files, labels or manifests are stored in this GitHub repository. The `data/moon/` paths in this section describe the **local** data tree created by `scripts/download_data.sh` (git-ignored); every `.lbl` label travels with its PDS product download. An earlier commit carried a partial set of downloaded labels and saved ODE web pages — removed as clutter (south-pole only, and two labels described the unused cylindrical products in §3.2).
+
 All lunar datasets originate from NASA's **Lunar Reconnaissance Orbiter (LRO)** and were queried via the **NASA PDS Geosciences Node — Lunar Orbital Data Explorer (ODE)**. Every raster or table is accompanied by its detached PDS3 label file (`.lbl`), which provides map projection parameters, scale factors, and nodata values required by `GDAL` / `rasterio`.
 
 ### 3.1 Lunar Terrain & Illumination (`data/moon/terrain/`)
@@ -85,8 +87,8 @@ All lunar datasets originate from NASA's **Lunar Reconnaissance Orbiter (LRO)** 
 | `dgdr_st_avg_cyl_128_jp2.jp2` (+ `.lbl`) | PDS4 Gridded Data Record Level 3 (`GDR_L3`) — Soil Temp | $-60^\circ$ to $+60^\circ$, $128\text{ px/deg}$ | $630.8\text{ MB}$ | Multi-year diurnal average regolith temperature ($\text{K}$) providing a global lunar thermal reference distribution. |
 | `dgdr_ra_avg_cyl_128_jp2.jp2` (+ `.lbl`) | PDS4 Gridded Data Record Level 3 (`GDR_L3`) — Rock Abundance | $-60^\circ$ to $+60^\circ$, $128\text{ px/deg}$ | $198.8\text{ MB}$ | Multi-year average areal fraction of exposed rocks/boulders versus fine regolith (geological hazard and surface composition feature). |
 
-### 3.3 Archive Manifests (`data/moon/`)
-* `terrain.htm` & `temperature.htm`: Saved HTML cart manifests from Lunar ODE recording exact PDS archive URLs, product IDs, and observation timestamps for reproducibility.
+### 3.3 Archive Manifests
+* The Lunar ODE cart manifests (`terrain.htm`, `temperature.htm`) record the exact PDS archive URLs and product IDs used. They are working files from the data-collection step and are **not** kept in the repository — the same product URLs are encoded in `scripts/download_data.sh`, which is the reproducibility record.
 
 ---
 
