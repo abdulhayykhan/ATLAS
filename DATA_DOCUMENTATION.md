@@ -192,3 +192,32 @@ USGS's mosaic server blocks scripted range access (HTTP 403), so the Mars
 quick-look reads the **PDS MOLA MEGDR** tile `megt44n000hb` by HTTP range
 requests — only the ~3 MB Jezero Crater window is fetched from the 130 MB
 tile. Output: `outputs/mars_profiles.csv`.
+
+---
+
+# Version 3 — Novel-Site Discovery Run (Challenge Guide #09)
+
+The local event's Challenge Guide #09 makes **novelty** the core task: its
+Introduction and Background direct participants to discover uncatalogued
+analogs and name the world-renowned sites (Atacama, Mauna Loa, Haughton…)
+as the already-done set. ATLAS was therefore re-run as a discovery engine:
+
+- **Excluded by design:** Atacama, Mauna Loa / Mauna Kea, Haughton Crater,
+  Rio Tinto, Iceland, Mojave, McMurdo Dry Valleys, Meteor Crater, Svalbard,
+  Wadi Rum, Pilbara. (They served as the validation control: with them
+  included, the engine ranked McMurdo #1 for 3 of 4 bases and Atacama #1
+  for Peary — the literature's answers, untuned.)
+- **Discovery pool (14 sites, 6 terrain types):** Lut Desert and Qaidam
+  Basin and Badain Jaran (arid basins); Etosha Pan and Salinas Grandes
+  (salt flats); Mount Erebus, Deception Island and Kamchatka (volcanic
+  fields); Undara and Manjanggul lava tubes (subterranean caves); Yamal
+  Peninsula (permafrost); Elgygytgyn, Lonar and Tenoumer (lesser-known
+  impact structures). Each site record carries a `terrain_type` and an
+  `analog_note` explaining why it is a new candidate.
+- **Guide Objective 6 implemented:** the app's Finder page re-weights the
+  score live (Rover mobility / Habitat & structures / Science & ISRU
+  presets + sliders), recomputing from stored per-factor distances.
+- **Guide Objective 4 extended:** K-Means clustering (k=3) groups the
+  sites into environmental regimes (`regime` column).
+- Island/coastal sites (Erebus, Deception Island, Jeju) mask sea pixels
+  (DEM elevation ≤ 0.5 m) so ocean does not dilute their terrain stats.

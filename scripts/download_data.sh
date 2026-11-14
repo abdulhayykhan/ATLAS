@@ -5,7 +5,7 @@
 #   data/moon/psr                    LPSR masks, both poles
 #   data/moon/illum                  PGDA-69 AVGVISIB solar + Earth visibility
 #   data/moon/temperature            Diviner PCP tables pols + poln
-#   data/earth/terrain               Copernicus DEM GLO-30 tiles for the 8 sites
+#   data/earth/terrain               Copernicus DEM GLO-30 tiles for the 14 novel sites
 # Total ~2.3 GB. SoilGrids and NASA POWER are streamed by the pipeline itself.
 set -eu
 cd "$(dirname "$0")/.."
@@ -36,7 +36,7 @@ for p in pols poln; do
   done
 done
 
-for t in S24_00_W070_00 N19_00_W156_00 S78_00_E162_00 N75_00_W090_00 N64_00_W020_00 N35_00_W112_00 N37_00_W007_00 N78_00_E015_00; do
+for t in N30_00_E058_00 N37_00_E094_00 N40_00_E102_00 S19_00_E016_00 S30_00_W066_00 S78_00_E167_00 S63_00_W061_00 N56_00_E160_00 S19_00_E144_00 N33_00_E126_00 N70_00_E068_00 N67_00_E172_00 N19_00_E076_00 N22_00_W011_00; do
   curl -L -C - -o "data/earth/terrain/Copernicus_DSM_COG_10_${t}_DEM.tif" \
     "https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_${t}_DEM/Copernicus_DSM_COG_10_${t}_DEM.tif"
 done

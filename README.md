@@ -3,16 +3,16 @@
 **Team:** Binary Knights
 **Event:** NASA Space Apps Challenge 2026 — *Identify Earth Locations that Analog the Permanent Moon Base Locations and Mars*
 
-> ATLAS measures the four planned permanent Moon base sites — **Peary, Shackleton, de Gerlache and Amundsen** — directly from NASA LRO data (both poles), profiles eight candidate Earth analog sites from Copernicus DEM, NASA POWER and SoilGrids data, and ranks every Earth site against every Moon base with a transparent weighted dissimilarity score. A Mars quick-look (Jezero Crater, MOLA) runs on the same method.
+> ATLAS measures the four planned permanent Moon base sites — **Peary, Shackleton, de Gerlache and Amundsen** — directly from NASA LRO data (both poles), profiles **14 newly-discovered candidate Earth analog sites** from Copernicus DEM, NASA POWER and SoilGrids data, and ranks every Earth site against every Moon base with a transparent weighted dissimilarity score. A Mars quick-look (Jezero Crater, MOLA) runs on the same method.
 
 ## What is built and working
 
 | Piece | File | Status |
 |---|---|---|
 | Moon profiles — all 4 bases: elevation, slope, roughness, PSR %, sun %, Earth %, temperature | `src/preprocess_moon.py` → `outputs/moon_profiles.csv` | ✅ run, verified |
-| Earth profiles — 8 sites: terrain (30 m DEM), temperature, soil | `src/preprocess_earth.py` → `outputs/earth_profiles.csv` | ✅ run |
+| Earth profiles — 14 NOVEL sites (famous analogs excluded per Challenge Guide #09): terrain (30 m DEM), temperature, soil | `src/preprocess_earth.py` → `outputs/earth_profiles.csv` | ✅ run |
 | Mars quick-look — Jezero Crater terrain | `src/preprocess_mars.py` → `outputs/mars_profiles.csv` | ✅ run |
-| Scoring & ranking (32 base×site pairs) + radar plots | `src/model.py` → `outputs/scores_ranking.csv`, `outputs/radar_*.png` | ✅ run |
+| Scoring & ranking (56 base×site pairs) + regime clustering + radar plots | `src/model.py` → `outputs/scores_ranking.csv`, `outputs/radar_*.png` | ✅ run |
 | Interactive app (map, compare, downloads) | `src/app.py` | ✅ |
 | Methodology, formula, weights, limitations | `outputs/methodology.md` | ✅ |
 | Full dataset documentation | `DATA_DOCUMENTATION.md` | ✅ |

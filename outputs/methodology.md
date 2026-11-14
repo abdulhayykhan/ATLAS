@@ -55,18 +55,80 @@ rovers and crews can be tested and trained there first?
 5. Soil: no dataset gives lunar soil percentages at these sites, so the soil
    pillar is an Earth-side *regolith-likeness* score (coarse fragments +
    sand − clay, normalised), the same for every base and labelled a proxy.
-   SoilGrids does not cover Antarctica, so McMurdo Dry Valleys has no soil
-   values; for that site the soil pillar is dropped and the remaining
-   weights renormalised — missing data is never scored as zero.
+   SoilGrids does not cover Antarctica, so the Antarctic sites (Erebus,
+   Deception Island) have no soil values; for those sites the soil pillar
+   is dropped and the remaining weights renormalised — missing data is
+   never scored as zero.
 6. Sun visibility % and Earth visibility % are **not** scored — Earth has no
    counterpart. They are displayed as mission context.
 
-## Benchmark check
+## Discovery design — Challenge Guide #09
+The guide's central instruction is to discover **novel** analogs, not to
+re-list famous ones. ATLAS therefore works in two stages:
+
+1. **Validation control run.** The engine was first run on the classic,
+   already-catalogued analogs. It independently ranked McMurdo Dry Valleys
+   #1 for three of the four bases and the Atacama Desert #1 for Peary —
+   the literature's own answers, with no tuning. This validates the engine
+   (see "Answers", Q7).
+2. **Discovery run (the results in this app).** The classic sites —
+   Atacama, Mauna Loa / Mauna Kea, Haughton, Rio Tinto, Iceland, Mojave,
+   McMurdo, Meteor Crater, Svalbard, Wadi Rum, Pilbara — are then
+   **excluded**, and a pool of 14 lesser-known candidate places is profiled
+   and ranked instead, spanning six terrain types (the guide requires at
+   least four): arid basins (Lut Desert, Qaidam, Badain Jaran), salt flats
+   (Etosha Pan, Salinas Grandes), volcanic fields (Mount Erebus, Deception
+   Island, Kamchatka), subterranean caves (Undara and Manjanggul lava
+   tubes), permafrost terrain (Yamal) and lesser-known impact structures
+   (Elgygytgyn, Lonar, Tenoumer). Five open repositories are integrated —
+   NASA PDS, ESA Copernicus, NASA POWER, ISRIC SoilGrids and NASA PGDA —
+   exceeding the guide's three-repository benchmark.
+3. **Seasonality (Guide Objective 5).** Every Earth profile includes the
+   seasonal temperature range (warmest minus coldest month) from NASA
+   POWER, and every Moon profile uses both Diviner seasonal slices
+   (winter and opposite season) — freeze–thaw and seasonal swing are
+   visible in the comparison instead of a single annual number.
+4. **Mission-specific re-weighting (Guide Objective 6).** The Finder page
+   offers mission profiles (Rover mobility, Habitat & structures,
+   Science & ISRU) plus free sliders; scores recompute live from the stored
+   per-factor distances.
+
+## Validation (control run)
 McMurdo Dry Valleys, Antarctica — the literature's classic lunar analog —
-ranks **#1 for three of the four bases** (Shackleton, de Gerlache,
-Amundsen), and the Atacama Desert, the classic hyper-arid analog, ranks #1
-for Peary. The engine was not tuned to produce this; it follows from the
-measurements and the stated weights.
+ranked **#1 for three of the four bases** (Shackleton, de Gerlache,
+Amundsen), and the Atacama Desert, the classic hyper-arid analog, ranked #1
+for Peary, when the classic sites were included in a control run. The
+engine was not tuned to produce this; it follows from the measurements and
+the stated weights. The discovery run then removes those sites by design.
+
+## Answers to the guide's seven questions (Section 7)
+1. **Illumination angles / perpetual darkness:** ATLAS does not re-derive
+   illumination geometry; it uses PGDA Product 69 modelled average solar
+   and Earth visibility (18.6-year cycle) for each base, plus LPSR shadow
+   masks. For Earth cave analogs, darkness is intrinsic to the documented
+   cave systems; the surface box profiles their volcanic host terrain.
+2. **Spectroscopic / neutron layers for volatile traps:** lunar volatile
+   context here is the LPSR permanently-shadowed-area fraction and Diviner
+   cold-trap temperatures (1st-percentile bins of 34–39 K). Dedicated
+   neutron (LEND) and spectrometer (M³) layers are a stated roadmap item,
+   not silently implied.
+3. **Normalising coarse planetary vs fine terrestrial data:** comparisons
+   are made between ROI/box *statistics* (means, percentiles, fractions),
+   never pixel-to-pixel, and every variable is min–max normalised across
+   the combined Moon + Earth set. The residual resolution mismatch is
+   Limitation 2.
+4. **Distance metrics / clustering:** weighted Euclidean dissimilarity
+   (weights published above) **and** K-Means clustering (k = 3) that groups
+   the Earth sites into environmental regimes, shown in the Finder.
+5. **Subsurface mapping data:** cave sites are documented systems from the
+   geological literature (Undara ~160 km of tubes; Manjanggul 7.4 km),
+   profiled via their surface DEM boxes; LiDAR cave surveys (e.g. USGS
+   3DEP) are a roadmap item — no underground raster is claimed.
+6. **Dynamic re-weighting:** implemented — see Discovery design, item 4.
+7. **Validation:** the control run above reproduces the literature's
+   classic rankings, and every Moon profile is verified against named
+   craters and published base characteristics (e.g. Peary's deep flat
+   floor, Shackleton's shadowed interior) before scoring.
 
 ## Limitations (stated, not hidden)
 1. **Temperature gap:** no Earth location is as cold as the lunar polar
@@ -78,8 +140,11 @@ measurements and the stated weights.
 3. **Air vs surface:** Earth temperature is 2 m air climatology; Moon
    temperature is surface bolometric temperature. They are compared as
    thermal-regime indicators, not identical physical quantities.
-4. **Candidate set:** eight well-known analog candidate sites are profiled;
-   a full global scan (the team's ETOPO/MODIS design) is the next step.
+4. **Candidate set:** 14 lesser-known candidate sites are profiled in the
+   discovery run; a full global scan (the team's ETOPO/MODIS design) is
+   the next step. Cave sites are characterised by their surface terrain
+   plus documented cave-system metadata — no underground measurements are
+   claimed.
 5. Diviner soil-temperature and rock-abundance *cylindrical* maps cover only
    −60°…+60° latitude and therefore contain **no data at any of the four
    polar bases**; they are not used. Polar (PCP) products are used instead.

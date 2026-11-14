@@ -61,7 +61,7 @@ def main():
     earth_n = both.iloc[len(moon_f):].reset_index(drop=True)
 
     # Earth regolith-likeness (0-1): coarse fragments and sand raise it, clay lowers it.
-    # SoilGrids does not cover Antarctica, so McMurdo has no soil values: for
+    # SoilGrids does not cover Antarctica, so Antarctic sites have no soil values: for
     # such sites the soil pillar is dropped and the remaining weights are
     # renormalised — missing data must never act as a penalty score.
     reg = (earth["coarse_fragments_pct"] + earth["sand_pct"] - earth["clay_pct"])
@@ -101,6 +101,33 @@ def main():
     df = df.sort_values(["moon_base", "rank_for_base"])
     df.to_csv(os.path.join(OUT, "scores_ranking.csv"), index=False)
     print(df.to_string())
+
+    # --- Site-regime clustering (Challenge Guide Objective 4 mentions
+    # clustering explicitly): K-Means (k=3) over the normalised Earth-site
+    # features groups the novel sites into environmental regimes. Cluster
+    # names are assigned from centroid character, not by hand per site.
+    try:
+        from sklearn.cluster import KMeans
+        feats = earth_n[["slope_n", "flat_n", "temperature_n", "relief_n"]].copy()
+        feats["regolith_n"] = reg_n.values
+        km = KMeans(n_clusters=3, n_init=10, random_state=42).fit(feats)
+        cent = pd.DataFrame(km.cluster_centers_, columns=feats.columns)
+        # Regime names are derived mechanically: cold/hot from each cluster's
+        # mean Earth temperature in raw degrees, slope word from the centroid.
+        mean_temp = earth.assign(_c=km.labels_).groupby("_c")["temp_mean_c"].mean()
+        rank = {int(c): i + 1 for i, c in enumerate(mean_temp.sort_values().index)}
+        names = {}
+        for c in range(3):
+            s = cent.loc[c, "slope_n"]
+            word = "rugged" if s > 0.6 else "flat" if s < 0.25 else "mixed"
+            names[c] = (f"Regime {rank[c]} · {word} "
+                        f"(cluster mean {mean_temp.loc[c]:.0f} °C)")
+        earth_out = earth.copy()
+        earth_out["regime"] = [names[c] for c in km.labels_]
+        earth_out.to_csv(os.path.join(OUT, "earth_profiles.csv"), index=False)
+        print("regimes:", earth_out[["site_name", "regime"]].to_string())
+    except Exception as e:
+        print("clustering skipped:", e)
 
     # Radar plots: per-feature similarity (1 - normalised distance) for each base's Top-1 site
     try:

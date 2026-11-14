@@ -42,9 +42,12 @@ if page == "Home":
         "NASA plans permanent bases at four lunar polar craters — **Peary, Shackleton, de Gerlache and Amundsen** — "
         "chosen for water ice in permanently shadowed regions, sunlight for power, and a direct view of Earth for "
         "communication. Before hardware and crews go there, they must be tested somewhere on Earth that behaves "
-        "the same way. ATLAS measures all four bases from real NASA LRO data, profiles candidate Earth sites from "
-        "Copernicus, NASA POWER and SoilGrids data, and ranks every Earth site against every base with a "
-        "transparent, weighted dissimilarity score."
+        "the same way. Following Challenge Guide #09, ATLAS is a **discovery engine for NEW analog sites**: the "
+        "world-famous analogs (Atacama, Mauna Kea, Haughton, Rio Tinto, McMurdo…) are deliberately **excluded**, "
+        "and instead 14 lesser-known extreme places — from Iran's Lut Desert and Siberia's Yamal permafrost to "
+        "Australia's Undara lava tubes — are measured and ranked against the bases. ATLAS measures all four bases "
+        "from real NASA LRO data and profiles every Earth site from Copernicus DEM, NASA POWER and SoilGrids data, "
+        "using a transparent, weighted dissimilarity score (which you can re-weight live on the Finder page)."
     )
     c = st.columns(4)
     for i, (_, b) in enumerate(moon.iterrows()):
@@ -81,27 +84,73 @@ elif page == "Moon Bases":
             "ATLAS processes both poles: LDEM/LDSM/LDRM 80N-75N and Diviner poln tables included.")
 
 elif page == "Earth Analog Finder":
-    st.title("Earth analog sites, ranked per Moon base")
+    st.title("New Earth analog sites, ranked per Moon base")
+    st.caption("All 14 sites are lesser-known places profiled by ATLAS for this challenge — the classic, "
+               "already-catalogued analogs (Atacama, Mauna Kea, Haughton, Rio Tinto, McMurdo, Meteor Crater, "
+               "Iceland, Svalbard) are excluded on purpose, per Challenge Guide #09.")
     base = st.selectbox("Choose a Moon base", moon["base_name"].tolist())
-    sub = scores[scores["moon_base"] == base].merge(earth, left_on="earth_site", right_on="site_name")
+
+    # --- Mission-specific re-weighting (Challenge Guide Objective 6):
+    # planners can prioritise rover mobility, habitat testing or ISRU science;
+    # scores recompute live from the stored per-factor distances.
+    import numpy as np
+    PRESETS = {
+        "Balanced (team default)": {"slope": 30, "flat": 20, "temperature": 20, "soil": 15, "relief": 15},
+        "Rover mobility": {"slope": 45, "flat": 35, "temperature": 5, "soil": 5, "relief": 10},
+        "Habitat & structures": {"slope": 10, "flat": 35, "temperature": 20, "soil": 10, "relief": 25},
+        "Science & ISRU": {"slope": 15, "flat": 10, "temperature": 25, "soil": 35, "relief": 15},
+    }
+    preset = st.selectbox("Mission profile (re-weights the score live)", list(PRESETS))
+    with st.expander("Fine-tune the weights"):
+        w = {k: st.slider(k.capitalize(), 0, 60, PRESETS[preset][k], key=f"w_{preset}_{k}")
+             for k in ["slope", "flat", "temperature", "soil", "relief"]}
+    if preset == "Balanced (team default)" and all(w[k] == PRESETS[preset][k] for k in w):
+        sub = scores[scores["moon_base"] == base].copy()
+        sub["display_score"] = sub["analog_score"]
+        sub["display_rank"] = sub["rank_for_base"]
+    else:
+        g = scores[scores["moon_base"] == base].copy()
+        def rescore(r):
+            num, den = 0.0, 0.0
+            for k in ["slope", "flat", "temperature", "soil", "relief"]:
+                d = r[f"dist_{k}"]
+                if pd.notna(d) and w[k] > 0:
+                    num += w[k] * d * d
+                    den += w[k]
+            return 100 * float(np.exp(-np.sqrt(num / den))) if den else np.nan
+        g["display_score"] = g.apply(rescore, axis=1)
+        g["display_rank"] = g["display_score"].rank(ascending=False, method="min").astype(int)
+        g = g.sort_values("display_rank")
+        sub = g
+        st.info(f"Showing a custom ranking for the **{preset}** profile — the stored default ranking "
+                "uses the Balanced weights.")
+    sub = sub.merge(earth, left_on="earth_site", right_on="site_name")
     try:
         import folium
         from streamlit_folium import st_folium
         m = folium.Map(location=[20, 0], zoom_start=2)
         brow = moon[moon["base_name"] == base].iloc[0]
         for _, r in sub.iterrows():
-            color = "green" if r["rank_for_base"] == 1 else "blue" if r["rank_for_base"] <= 3 else "gray"
+            color = "green" if r["display_rank"] == 1 else "blue" if r["display_rank"] <= 3 else "gray"
             folium.CircleMarker([r["lat"], r["lon"]], radius=8, color=color, fill=True,
                                 popup=f"<b>{r['earth_site']}</b> ({r['country']})<br>{r['site_type']}<br>"
-                                      f"Analog Score: {r['analog_score']}<br>Mean slope: {r['slope_mean_deg']}°<br>"
+                                      f"Analog Score: {r['display_score']}<br>Mean slope: {r['slope_mean_deg']}°<br>"
                                       f"Mean temp: {r['temp_mean_c']}°C").add_to(m)
         st_folium(m, width=None, height=480)
     except Exception as e:
         st.warning(f"Map unavailable ({e}); table below has the same data.")
-    st.dataframe(sub[["rank_for_base", "earth_site", "country", "site_type", "analog_score",
-                      "slope_mean_deg", "pct_slope_under_10deg", "temp_mean_c", "sand_pct",
-                      "clay_pct", "coarse_fragments_pct"]],
+    cols = ["display_rank", "earth_site", "country", "terrain_type", "analog_score",
+            "slope_mean_deg", "pct_slope_under_10deg", "temp_mean_c", "temp_seasonal_range_c",
+            "sand_pct", "clay_pct", "coarse_fragments_pct"]
+    if "regime" in sub.columns:
+        cols.insert(4, "regime")
+    show = sub.copy()
+    show["analog_score"] = show["display_score"]
+    st.dataframe(show[cols].rename(columns={"display_rank": "rank"}),
                  width="stretch", hide_index=True)
+    with st.expander("Why each site is a NEW analog — discovery notes"):
+        for _, r in sub.sort_values("display_rank").iterrows():
+            st.write(f"**#{int(r['display_rank'])} {r['earth_site']}** ({r['country']}) — {r['analog_note']}")
     st.download_button("Download full ranking (CSV)", scores.to_csv(index=False), "atlas_scores_ranking.csv", "text/csv")
     st.download_button("Download Earth profiles (CSV)", earth.to_csv(index=False), "atlas_earth_profiles.csv", "text/csv")
     st.download_button("Download Moon profiles (CSV)", moon.to_csv(index=False), "atlas_moon_profiles.csv", "text/csv")
