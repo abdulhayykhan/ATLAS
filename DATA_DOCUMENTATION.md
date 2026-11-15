@@ -223,3 +223,44 @@ as the already-done set. ATLAS was therefore re-run as a discovery engine:
   sites into environmental regimes (`regime` column).
 - Island/coastal sites (Erebus, Deception Island, Jeju) mask sea pixels
   (DEM elevation ≤ 0.5 m) so ocean does not dilute their terrain stats.
+
+---
+
+# Direct Data Links — As Built (added 15 Nov 2026)
+
+These are the exact sources the **final** ATLAS pipeline used — the same lists
+submitted in the NASA Data and Space Agency Partner & Other Data sections of
+the Space Apps global portal. All links verified live on 15 November 2026.
+Exact file-level URLs for every download are encoded in
+`scripts/download_data.sh`, which remains the reproducibility record.
+
+## NASA data
+
+| Dataset | Used for | Direct link |
+| :--- | :--- | :--- |
+| LRO LOLA Gridded Data Records (LDEM / LDSM / LDRM) | Moon polar elevation, slope and roughness for all 4 bases, both poles | https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx |
+| LRO LOLA Permanently Shadowed Region Maps (LPSR) | PSR % per base study area | https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx |
+| LRO Diviner Polar Cumulative Products (PCP) | Bolometric surface temperature, both poles (pols + poln, winter + opposite-season slices) | https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/data_derived_pcp/diurnal/ |
+| Lunar Illumination & Average Visibility Maps (Mazarico et al. 2011; PGDA 69) | Sun visibility % and Earth visibility % per base | http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/ |
+| NASA PGDA — LOLA Polar Products Catalog | Product identification for the polar DEMs (South Pole mosaic, 80S mosaic, North Pole grids) | https://pgda.gsfc.nasa.gov/ |
+| MGS MOLA MEGDR | Mars topography — Jezero Crater profile | https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/ |
+| NASA POWER Climatology | Earth-site mean and seasonal temperatures (API: https://power.larc.nasa.gov/api/temporal/climatology/point) | https://power.larc.nasa.gov/ |
+
+## Space Agency Partner & other data
+
+| Dataset / resource | Used for | Direct link |
+| :--- | :--- | :--- |
+| Copernicus DEM GLO-30 (ESA / Airbus) | Earth elevation and slope at native 30 m for all 14 candidate sites | https://copernicus-dem-30m.s3.amazonaws.com/ |
+| SoilGrids 2.0 (ISRIC) | Soil pillar — sand, clay and coarse-fragment fractions (0–5 cm) | https://soilgrids.org |
+| Google Maps embedded tiles | Basemap imagery in the web app (free tile service, no API key) | https://www.google.com/maps |
+| Leaflet (open-source library) | Interactive map in the web app | https://leafletjs.com |
+
+## Documented in v1 but NOT used in the final pipeline
+
+For the record: the v1 plan in this document also listed ETOPO 2022,
+MODIS MOD11C3 / MCD12C1, and Diviner cylindrical soil-temperature and
+rock-abundance products. These were **not** used in the final build — ETOPO
+was replaced by Copernicus GLO-30 (finer resolution), MODIS temperatures by
+NASA POWER climatology, and the cylindrical Diviner products (which cover
+only −60°…+60° latitude) by the polar PCP tables. They are therefore not
+listed in the portal submission either.
