@@ -202,3 +202,17 @@ and one mint accent, telemetry in DM Mono):
   hillshades are prefetched during idle time, the page preconnects to the
   Google tile hosts, and the backend gzips responses (styles.css 25.6 KB →
   6.6 KB on the wire) with week-long cache headers on static assets.
+- **Full verification pass (15 Nov 2026):** 27 backend checks (every endpoint,
+  the four published winners to 0.1, preset + custom-weight re-ranking,
+  radar null-soil behaviour, CSV downloads, 4xx handling) — all pass. The
+  rankings API returns both `analog_score` (the stored official score) and
+  `display_score` (the score under the requested weights); the UI renders
+  `display_score`. Frontend: scripted pass over all six views and every
+  control (base switching, presets, sliders, log tabs, tile modes, zoom,
+  compare, downloads, guide) with zero app errors and zero internal failed
+  requests; overflow scans clean on desktop and phone; the Streamlit app
+  passes AppTest on all six pages with no exceptions. One visual bug was
+  found and fixed in this pass: on phone widths the map-fallback notice
+  overlapped the Leaflet attribution and the runner-up label — it is now
+  narrower and left-aligned on small screens, clear of both (verified
+  geometrically and by screenshot).

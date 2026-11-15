@@ -398,7 +398,7 @@ button.rrow:hover{background:rgba(255,255,255,.035)}
   .basecards{flex-wrap:wrap;justify-content:flex-start;margin-right:0}
   .info-wrap{position:fixed;right:12px;bottom:72px}
   .map-tools{top:8px}
-  .map-fallback{top:210px}
+  .map-fallback{top:118px;left:10px;transform:none;max-width:58%}
   .cell-mission,.cell-phase{display:none}
   .base-profile{grid-template-columns:1fr}
   .compare-grid{grid-template-columns:1fr}
