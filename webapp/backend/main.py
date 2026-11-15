@@ -33,8 +33,9 @@ import os
 import re
 from functools import lru_cache
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -55,6 +56,20 @@ PRESETS = {
 app = FastAPI(title="ATLAS API", description="Analog Terrain & Lunar Alignment System — Team Binary Knights",
               version="2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
+app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+@app.middleware("http")
+async def cache_headers(request: Request, call_next):
+    """Static assets are immutable per deploy — cache them hard. The API data
+    only changes when the pipeline is re-run, so a short cache is safe."""
+    resp = await call_next(request)
+    p = request.url.path
+    if p.startswith("/vendor/") or p.endswith((".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico")):
+        resp.headers["Cache-Control"] = "public, max-age=604800"
+    elif p.startswith("/api/"):
+        resp.headers.setdefault("Cache-Control", "public, max-age=60")
+    return resp
 
 
 _INT_RE = re.compile(r"^-?\d+$")

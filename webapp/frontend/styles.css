@@ -124,6 +124,9 @@ button{font:inherit;cursor:pointer}
 /* ------------------------------------------------------------- views */
 .view{position:absolute;inset:0;z-index:10;display:none}
 .view.active{display:block}
+/* the console overlay must never swallow map input: the section itself is
+   click-through, only its panels (via .console-grid > *) take events */
+.view-console{pointer-events:none}
 .view:not(.view-console){overflow-y:auto;padding:14px}
 .workspace{
   max-width:1060px;margin:0 auto;padding:18px 20px 22px;border-radius:12px;
@@ -159,6 +162,7 @@ button{font:inherit;cursor:pointer}
   grid-template-areas:"left . feed" "left legend bases";
 }
 .console-grid>*{pointer-events:auto}
+.console-grid>.legend{pointer-events:none}
 .leftcol{grid-area:left;display:flex;flex-direction:column;gap:10px;overflow-y:auto;overflow-x:hidden;padding-right:2px;min-height:0}
 .leftcol::-webkit-scrollbar,.view::-webkit-scrollbar{width:8px}
 .leftcol::-webkit-scrollbar-thumb,.view::-webkit-scrollbar-thumb{background:#26313b;border-radius:4px}

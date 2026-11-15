@@ -122,14 +122,20 @@ function initMap() {
   const box = $("#map");
   if (typeof L === "undefined") { $("#mapFallback").hidden = false; return; }
   try {
-    state.map = L.map("map", { zoomControl: false, worldCopyJump: true }).setView([24, 6], 2);
+    state.map = L.map("map", {
+      zoomControl: false, worldCopyJump: true,
+      dragging: true,            /* pan with the left mouse button / touch */
+      scrollWheelZoom: true,     /* zoom in/out at the cursor position */
+      doubleClickZoom: true, boxZoom: true, keyboard: true,
+      preferCanvas: true,        /* rings/paths on canvas — faster than SVG */
+    }).setView([24, 6], 2);
     /* Google map tiles via the free embedded tile service — no API key needed.
        MAP = Google roadmap, rendered dark by a CSS filter on the tile pane.
        GLOBE = Google hybrid satellite (imagery + labels). */
     state.tileDark = L.tileLayer("https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}",
-      { attribution: "Map data © Google", maxZoom: 18, subdomains: ["0", "1", "2", "3"] });
+      { attribution: "Map data © Google", maxZoom: 18, subdomains: ["0", "1", "2", "3"], updateWhenZooming: false, keepBuffer: 2 });
     state.tileGlobe = L.tileLayer("https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-      { attribution: "Imagery © Google", maxZoom: 18, subdomains: ["0", "1", "2", "3"] });
+      { attribution: "Imagery © Google", maxZoom: 18, subdomains: ["0", "1", "2", "3"], updateWhenZooming: false, keepBuffer: 2 });
     state.tileDark.addTo(state.map);
     state.map.getContainer().classList.add("dark-tiles");
     state.siteLayer = L.layerGroup().addTo(state.map);
@@ -542,6 +548,10 @@ async function boot() {
       api("/api/health"), api("/api/moon-bases"), api("/api/earth-sites"), api("/api/winners"),
     ]);
     state.health = health; state.bases = bases; state.sites = sites; state.winners = winners;
+    /* warm the browser cache with the four LOLA hillshades during idle time,
+       so switching bases (Site Feed + Compare) paints instantly */
+    const warm = () => bases.forEach((b) => { const i = new Image(); i.src = b.hillshade_url; });
+    if (window.requestIdleCallback) requestIdleCallback(warm, { timeout: 2500 }); else setTimeout(warm, 1200);
     $("#topScored").textContent = `${health.score_rows}/${bases.length * sites.length}`;
     $("#topBase").innerHTML = bases.map((b) => `<option>${esc(b.base_name)}</option>`).join("");
     $("#topBase").value = state.base;

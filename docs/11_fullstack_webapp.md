@@ -179,3 +179,14 @@ and one mint accent, telemetry in DM Mono):
   Log alerts, CSV downloads) plus the within-pool scoring caveat. It closes on
   outside click or Escape, and the console's base cards are offset so nothing
   overlaps the button.
+- **Map interaction fix + performance pass:** the console overlay section was
+  swallowing every mouse event over the map (its inner grid was
+  click-through, but the section itself was not), so the map could not be
+  panned or zoomed. The section is now `pointer-events: none` (panels still
+  take events individually; the legend is click-through too). Verified by
+  scripted tests: left-button drag pans, mouse wheel zooms in/out at the
+  cursor, double-click zooms, touch drag pans. Leaflet now renders vector
+  layers on canvas (`preferCanvas`), tiles update at zoom end, the four LOLA
+  hillshades are prefetched during idle time, the page preconnects to the
+  Google tile hosts, and the backend gzips responses (styles.css 25.6 KB →
+  6.6 KB on the wire) with week-long cache headers on static assets.
