@@ -96,6 +96,27 @@ $("#railData").addEventListener("click", () => {
   setTimeout(() => { const d = $("#downloads"); if (d) d.scrollIntoView({ behavior: "smooth", block: "center" }); }, 350);
 });
 
+/* ------------------------------------------------------- operator guide */
+const infoWrap = $("#infoWrap"), infoBtn = $("#infoBtn");
+infoBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = infoWrap.classList.toggle("open");
+  infoBtn.setAttribute("aria-expanded", open);
+  infoBtn.setAttribute("aria-label", open ? "Close user guide" : "Open user guide");
+});
+document.addEventListener("click", (e) => {
+  if (!infoWrap.contains(e.target)) {
+    infoWrap.classList.remove("open");
+    infoBtn.setAttribute("aria-expanded", "false");
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    infoWrap.classList.remove("open");
+    infoBtn.setAttribute("aria-expanded", "false");
+  }
+});
+
 /* --------------------------------------------------------------------- map */
 function initMap() {
   const box = $("#map");

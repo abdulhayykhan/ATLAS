@@ -172,3 +172,10 @@ and one mint accent, telemetry in DM Mono):
   tile errors and clears on the next successful tile; zero JS errors and every
   view were verified with headless-Chromium screenshots at desktop and phone
   sizes before this shipped.
+- **Operator guide:** a circular info button sits at the stage's bottom-right
+  corner on every view. Hovering (or tapping/clicking, for touch) opens a
+  minimal glass guide card in the same design language — six one-line entries
+  (base switching, ranking rings, Finder re-weighting, Compare radar, Mission
+  Log alerts, CSV downloads) plus the within-pool scoring caveat. It closes on
+  outside click or Escape, and the console's base cards are offset so nothing
+  overlaps the button.

@@ -253,6 +253,25 @@
         </div>
       </section>
 
+      <!-- ============ OPERATOR GUIDE (info, bottom right) ============ -->
+      <div class="info-wrap" id="infoWrap">
+        <div class="info-card glass" id="infoCard" role="tooltip">
+          <div class="ptitle light">Operator Guide</div>
+          <ul class="guide-list">
+            <li><b>Base</b> — switch from the top bar or the base cards; every panel re-ranks instantly.</li>
+            <li><b>Ranking</b> — the orange ring on the map is the #1 match, mint is the runner-up; the dashed line is the top-3 path.</li>
+            <li><b>Finder</b> — mission presets and weight sliders re-score all 14 sites live. Click any row for its discovery note.</li>
+            <li><b>Compare</b> — radar shows per-factor similarity; a hollow marker means that factor had no data and was not scored.</li>
+            <li><b>Mission Log</b> — ALERTS flag real data gaps, e.g. sites with no soil coverage.</li>
+            <li><b>Data</b> — full CSV downloads live at the bottom of the Finder view.</li>
+          </ul>
+          <p class="guide-foot">Scores rank sites within this 14-site pool only. Full method, weights and limitations: Method view.</p>
+        </div>
+        <button type="button" class="info-btn" id="infoBtn" aria-label="Open user guide" aria-expanded="false" aria-controls="infoCard">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.6" r="0.6" class="idot"/></svg>
+        </button>
+      </div>
+
     </main>
   </div>
 </div>
