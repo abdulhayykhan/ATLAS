@@ -1,13 +1,13 @@
 # 12 — Deployment & Submission
 
-*Status: the complete codebase is on GitHub. This document records the push, how to deploy both apps, and the exact Space Apps submission steps that remain.*
+*Status (15 Nov 2026): the complete codebase is on GitHub, audited and fully verified; the portal project exists and is being completed. This document records the push, how to deploy both apps, and the exact Space Apps submission steps that remain.*
 
 ## 12.1 Source of truth — GitHub (pushed 14 November 2026)
 
 - **Repository:** https://github.com/abdulhayykhan/ATLAS (public)
 - **Branch:** `main`
 - **Push record:** the remote moved from the team's initial commit `d65a712` ("init ATLAS with docs and dataset metadata") to the complete build in one push on 14 Nov 2026, authorised by a team collaborator via GitHub's device sign-in flow.
-- **Files on GitHub:** 55 (verified through the GitHub API after the push — includes `src/`, `outputs/`, `docs/00–12`, `webapp/`, `scripts/`, README, DATA_DOCUMENTATION, DOCUMENTATION).
+- **Files on GitHub:** 49 (verified through the GitHub API on 15 Nov 2026, after the repo audit removed five unused Leaflet default-asset images — includes `src/`, `outputs/`, `docs/00–12`, `webapp/`, `scripts/`, README, DATA_DOCUMENTATION, DOCUMENTATION).
 - **Commit chain on `main`:**
 
 | Commit | Content |
@@ -19,6 +19,15 @@
 | `54cba0b` | Full-stack web app: FastAPI backend + responsive vanilla frontend |
 | `79e9b24` | Documentation update: docs/12 deployment & submission guide, README fixes |
 | *(cleanup)* | Removed the init commit's `data/moon/` label & saved-web-page downloads (11 files) |
+| `75731a8` | Mission-control console UI (Fuselab-style, team-approved design) |
+| `27c3edf` | Map tiles switched to Google's free embedded tile service (no API key) |
+| `a233216` | DATA_DOCUMENTATION: direct data links (as built) — the portal submission lists |
+| `cf26ade` | Operator-guide info button (bottom-right, same console theme) |
+| `216dc6b` | Guide opens on icon hover only |
+| `11df55c` | Map pan/zoom fix (console overlay had swallowed mouse events) + performance pass (canvas renderer, gzip, cache headers, preconnects) |
+| `8316f8a` | Repo audit cleanup: five unused Leaflet default-asset images removed |
+| `1f00cd3` | Full verification pass recorded; mobile map-fallback overlap fixed |
+| *(docs finalisation)* | README rewritten in full; documentation set made submission-ready |
 
 - **Cleanup note (14 Nov 2026):** the initial commit had committed a partial set of PDS label files and saved Lunar ODE web pages under `data/moon/`. They were removed from the repository: the set was south-pole only (the pipeline uses both poles), two labels described products the project does not use, and every label in any case travels with its PDS product download. `.gitignore` now excludes the whole local `data/` tree, which `scripts/download_data.sh` recreates on any machine. Nothing in `src/` or `webapp/` reads the committed copies — both apps run from `outputs/` alone.
 
@@ -70,7 +79,7 @@ bash webapp/run.sh 8000        # http://localhost:8000
 
 **Hugging Face Spaces (Docker SDK) also works:** point the Space at this repo with the same uvicorn start command on port 7860.
 
-Sanity-check after deploy: `GET /api/health` returns `{"status": "ok", "moon_bases": 4, "earth_sites": 14, "score_rows": 56}`; open the site on a phone — the ranking table must collapse into stacked cards and the menu into the hamburger button.
+Sanity-check after deploy: `GET /api/health` returns `{"status": "ok", "moon_bases": 4, "earth_sites": 14, "score_rows": 56}`; open the site on a phone — the console must stack over a map band and the icon rail must become a bottom tab bar; drag the map and scroll-zoom to confirm both respond.
 
 **Which one to submit?** Both links can go in the project. If only one: the web app — it is the more polished, fully responsive interface and demonstrates the full-stack build. The Streamlit app remains the analysis workbench.
 
@@ -81,6 +90,17 @@ Sanity-check after deploy: `GET /api/health` returns `{"status": "ok", "moon_bas
 - Upload to YouTube as **Unlisted**, title: `ATLAS — Analog Terrain & Lunar Alignment System | NASA Space Apps 2026`.
 
 ## 12.5 Space Apps portal submission checklist
+
+**Portal status (15 Nov 2026):** the project exists under the team page
+**Binary Knights** (spaceappschallenge.org/2026/find-a-team/binary-knights1/)
+and the submission form is in progress. The **NASA Data** and **Space
+Agency Partner & Other Data** link lists are final — they are the tables in
+`DATA_DOCUMENTATION.md` → *Direct Data Links — As Built* (every URL verified
+live on 15 Nov 2026). Still to complete on the portal before submitting:
+add **all five team members** to the project (the portal lists members, so
+each member needs their own Space Apps account and the leader adds them),
+paste the fields below, add the deployed-app and video links once they
+exist, then submit for judging.
 
 Project fields (portal: https://www.spaceappschallenge.org/2026/ — sign in, open the team **Binary Knights**, create/edit the project):
 

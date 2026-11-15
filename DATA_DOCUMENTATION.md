@@ -7,6 +7,31 @@
 
 ---
 
+> **How to read this document (added 15 Nov 2026).** This file is the
+> project's complete dataset record, kept in the order it was written:
+>
+> 1. **Sections 1–8 — the team's original data plan (v1).** Written before
+>    the build. Two of its assumptions were later corrected: it covers only
+>    the South Pole, and it lists some products the final pipeline does not
+>    use. It is preserved unchanged as the planning record.
+> 2. **The v2 addendum** — what the as-built pipeline actually used, and
+>    why (both lunar poles; the Diviner cylindrical products dropped
+>    because they contain no polar data; ETOPO replaced by Copernicus
+>    GLO-30; MODIS temperatures replaced by NASA POWER).
+> 3. **The v3 note** — the Guide-#09 discovery run (14 novel sites,
+>    classics excluded).
+> 4. **"Direct Data Links — As Built"** (final section) — the exact
+>    source links the finished pipeline used, in the same form submitted
+>    in the NASA Data and Space Agency Partner & Other Data sections of
+>    the Space Apps portal, including an explicit list of planned datasets
+>    that were **not** used.
+>
+> **For the authoritative as-built record, read the v2 addendum and the
+> Direct Data Links section.** Where v1 and the addenda disagree, the
+> addenda are correct.
+
+---
+
 ## 1. Overview & Data Strategy
 
 ATLAS identifies terrestrial analog sites on Earth that closely match the geophysical conditions of candidate lunar base locations—specifically the **Lunar South Pole ($-80^\circ$ to $-90^\circ$ latitude)**. Rather than relying on single-variable heuristics, the pipeline evaluates candidate locations across three core planetary pillars:

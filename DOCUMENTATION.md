@@ -21,7 +21,7 @@ in the [`docs/`](docs/) folder:
 | 11 | [Phase 5 — Full-Stack Web App](docs/11_fullstack_webapp.md) | FastAPI backend API reference and the responsive vanilla HTML/CSS/JS frontend |
 | 12 | [Deployment & Submission](docs/12_deployment_and_submission.md) | GitHub push record, deployment recipes for both apps, demo video and Space Apps portal submission checklist |
 
-**Repository status:** the complete codebase — pipeline, results, this documentation set and the web app — is pushed to https://github.com/abdulhayykhan/ATLAS (`main`, 55 files, verified 14 Nov 2026). See doc 12 for details.
+**Repository status:** the complete codebase — pipeline, results, this documentation set and both apps — is pushed to https://github.com/abdulhayykhan/ATLAS (`main`, 49 files, audited and verified 15 Nov 2026; see doc 11 for the audit record and doc 12 for deployment and submission).
 
 Related documents:
 
