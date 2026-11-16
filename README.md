@@ -16,9 +16,6 @@ Measured from NASA orbital data. Ranked by one transparent, re-weightable score.
 
 **[Live demo](https://atlas-ten-tan.vercel.app)** · **[Documentation](DOCUMENTATION.md)** · **[Data record](DATA_DOCUMENTATION.md)** · **[Reproduce](docs/09_reproduction_guide.md)**
 
-<!-- Add the console screenshot at docs/img/console.png -->
-<img src="docs/img/console.png" alt="ATLAS mission-control console showing the world map, analog ranking and site feed" width="900">
-
 </div>
 
 ---
@@ -287,7 +284,7 @@ Raw data (`data/`, ~2.3 GB) is git-ignored by design and rebuilt by the download
 
 ## Team
 
-**Team Binary Knights**: Muhammad Ubaid · Muhammad Fasih · Maryam Sohail Ahmed · Muhammad Fasih · Mariyam · Abdul Hayy Khan 
+**Team Binary Knights**: Muhammad Ubaid · Maryam Sohail · Muhammad Fasih · Mariyam · Abdul Hayy Khan 
 
 Built at the NASA Space Apps Challenge 2026, Karachi.
 
